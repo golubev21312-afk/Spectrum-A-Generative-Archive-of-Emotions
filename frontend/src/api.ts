@@ -12,6 +12,7 @@ export interface EmotionResponse {
   emotion_type?: string;
   likes_count: number;
   liked_by_me: boolean;
+  thumbnail?: string;
 }
 
 export interface EmotionFeed {
@@ -77,12 +78,13 @@ export async function login(
 
 export async function saveEmotion(
   parameters: Record<string, number>,
-  emotion_type?: string
+  emotion_type?: string,
+  thumbnail?: string
 ): Promise<{ id: number }> {
   const res = await fetch(`${API_BASE}/emotions`, {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify({ parameters, emotion_type }),
+    body: JSON.stringify({ parameters, emotion_type, thumbnail }),
   });
   if (!res.ok) throw new Error(`Save failed: ${res.status}`);
   return res.json();

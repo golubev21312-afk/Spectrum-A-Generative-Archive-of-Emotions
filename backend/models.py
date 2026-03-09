@@ -23,6 +23,7 @@ ALLOWED_EMOTION_TYPES = {
 class EmotionIn(BaseModel):
     parameters: dict
     emotion_type: Optional[str] = None
+    thumbnail: Optional[str] = None  # base64 JPEG data URL, max ~15KB
 
     @field_validator("parameters")
     @classmethod
@@ -53,6 +54,7 @@ class EmotionOut(BaseModel):
     emotion_type: Optional[str] = None
     likes_count: int = 0
     liked_by_me: bool = False
+    thumbnail: Optional[str] = None
 
 
 class EmotionFeed(BaseModel):

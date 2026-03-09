@@ -82,6 +82,7 @@ def _build_emotion(row, liked_ids: set[int] = set()) -> EmotionOut:
         emotion_type=row["emotion_type"],
         likes_count=row["likes_count"],
         liked_by_me=row["id"] in liked_ids,
+        thumbnail=row["thumbnail"],
     )
 
 
@@ -117,14 +118,18 @@ async def create_emotion(request: Request, emotion: EmotionIn, user: dict | None
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
     pool = await get_pool()
+    # Validate thumbnail size (max 20KB base64)
+    if emotion.thumbnail and len(emotion.thumbnail) > 20_000:
+        raise HTTPException(status_code=400, detail="Thumbnail too large")
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            """INSERT INTO emotions (parameters, user_id, username, emotion_type)
-               VALUES ($1::jsonb, $2, $3, $4) RETURNING id""",
+            """INSERT INTO emotions (parameters, user_id, username, emotion_type, thumbnail)
+               VALUES ($1::jsonb, $2, $3, $4, $5) RETURNING id""",
             json.dumps(emotion.parameters),
             user["user_id"],
             user["username"],
             emotion.emotion_type,
+            emotion.thumbnail,
         )
     return {"id": row["id"]}
 
@@ -135,7 +140,7 @@ async def get_random_emotion(user: dict | None = Depends(get_current_user)):
     liked_ids: set[int] = set()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            """SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type,
+            """SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type, e.thumbnail,
                       COUNT(l.user_id) AS likes_count
                FROM emotions e
                LEFT JOIN likes l ON l.emotion_id = e.id
@@ -189,7 +194,7 @@ async def get_emotions(
         total = total_row["count"]
 
         rows = await conn.fetch(
-            f"""SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type,
+            f"""SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type, e.thumbnail,
                        COUNT(l.user_id) AS likes_count
                 FROM emotions e
                 LEFT JOIN likes l ON l.emotion_id = e.id
@@ -223,7 +228,7 @@ async def get_emotion(emotion_id: int, user: dict | None = Depends(get_current_u
     liked_ids: set[int] = set()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            """SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type,
+            """SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type, e.thumbnail,
                       COUNT(l.user_id) AS likes_count
                FROM emotions e
                LEFT JOIN likes l ON l.emotion_id = e.id
@@ -286,7 +291,7 @@ async def get_user_profile(username: str, user: dict | None = Depends(get_curren
             raise HTTPException(status_code=404, detail="User not found")
 
         emotion_rows = await conn.fetch(
-            """SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type,
+            """SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type, e.thumbnail,
                       COUNT(l.user_id) AS likes_count
                FROM emotions e
                LEFT JOIN likes l ON l.emotion_id = e.id

@@ -4,6 +4,36 @@ import { saveEmotion } from "./api";
 import { AmbientAudio } from "./audio";
 import { t, detectEmotion } from "./i18n";
 
+const ONBOARD_KEY = "spectrum_onboarded";
+
+function mountOnboarding(app: HTMLElement) {
+  if (localStorage.getItem(ONBOARD_KEY)) return;
+
+  const overlay = document.createElement("div");
+  overlay.className = "onboarding-overlay";
+
+  const box = document.createElement("div");
+  box.className = "onboarding-box";
+  box.innerHTML = `
+    <div class="onboarding-glyph">✦</div>
+    <div class="onboarding-title">${t("onboardTitle")}</div>
+    <div class="onboarding-text">${t("onboardText")}</div>
+    <button class="action-btn onboarding-btn">${t("onboardOk")}</button>
+  `;
+
+  overlay.appendChild(box);
+  app.appendChild(overlay);
+
+  const dismiss = () => {
+    localStorage.setItem(ONBOARD_KEY, "1");
+    overlay.classList.add("onboarding-fade-out");
+    setTimeout(() => overlay.remove(), 300);
+  };
+
+  box.querySelector("button")!.addEventListener("click", dismiss);
+  overlay.addEventListener("click", e => { if (e.target === overlay) dismiss(); });
+}
+
 // Particle force by emotion name (RU + EN)
 const EMOTION_FORCE: Record<string, number> = {
   Ярость: -1,    Rage: -1,
@@ -24,12 +54,22 @@ const EMOTION_FORCE: Record<string, number> = {
   Радость: 0.8,  Joy: 0.8,
 };
 
+function captureThumbnail(src: HTMLCanvasElement): string {
+  const w = 200, h = 125;
+  const tmp = document.createElement("canvas");
+  tmp.width = w;
+  tmp.height = h;
+  tmp.getContext("2d")!.drawImage(src, 0, 0, w, h);
+  return tmp.toDataURL("image/jpeg", 0.7);
+}
+
 export function mountCreator(app: HTMLElement) {
   const hint = document.createElement("div");
   hint.className = "page-hint";
   hint.textContent = t("hintCreate");
   app.appendChild(hint);
 
+  mountOnboarding(app);
   const cubeScene = new CubeScene(app);
   const audio = new AmbientAudio();
 
@@ -77,7 +117,8 @@ export function mountCreator(app: HTMLElement) {
     try {
       const params = controls.getValues();
       const emotionType = lastEmotionName || detectEmotion(params as unknown as Record<string, number>);
-      const result = await saveEmotion(params as unknown as Record<string, number>, emotionType);
+      const thumbnail = captureThumbnail(cubeScene.getCanvas());
+      const result = await saveEmotion(params as unknown as Record<string, number>, emotionType, thumbnail);
       btn.textContent = `${t("saved")} #${result.id}`;
       setTimeout(() => {
         btn.disabled = false;
