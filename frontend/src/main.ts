@@ -170,7 +170,11 @@ function route() {
   prevNav?._cleanup?.();
 
   app.innerHTML = "";
+  app.classList.remove("page-enter");
+  void app.offsetWidth; // force reflow
+  app.classList.add("page-enter");
   app.appendChild(createNav());
+  app.appendChild(createMobileNav());
 
   const hash = location.hash || "#/create";
 
@@ -191,6 +195,42 @@ function route() {
   } else {
     cleanup = mountCreator(app) || null;
   }
+}
+
+function createMobileNav(): HTMLElement {
+  const bar = document.createElement("nav");
+  bar.className = "mobile-nav";
+
+  const tabs = [
+    { href: "#/create", icon: "✦", labelKey: "create" as const },
+    { href: "#/feed",   icon: "◈", labelKey: "feed" as const },
+  ] as const;
+
+  const hash = location.hash || "#/create";
+
+  tabs.forEach(({ href, icon, labelKey }) => {
+    const a = document.createElement("a");
+    a.href = href;
+    a.className = `mobile-nav-tab${hash.startsWith(href) ? " active" : ""}`;
+    a.innerHTML = `<span class="mobile-nav-icon">${icon}</span><span class="mobile-nav-label">${t(labelKey)}</span>`;
+    bar.appendChild(a);
+  });
+
+  // Profile or Auth tab
+  const profileA = document.createElement("a");
+  if (isLoggedIn()) {
+    const u = getUsername() || "";
+    profileA.href = `#/profile/${u}`;
+    profileA.className = `mobile-nav-tab${hash.startsWith("#/profile/") ? " active" : ""}`;
+    profileA.innerHTML = `<span class="mobile-nav-icon">◉</span><span class="mobile-nav-label">${t("profile")}</span>`;
+  } else {
+    profileA.href = "#/auth";
+    profileA.className = `mobile-nav-tab${hash === "#/auth" ? " active" : ""}`;
+    profileA.innerHTML = `<span class="mobile-nav-icon">◎</span><span class="mobile-nav-label">${t("auth")}</span>`;
+  }
+  bar.appendChild(profileA);
+
+  return bar;
 }
 
 window.addEventListener("hashchange", route);

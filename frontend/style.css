@@ -404,6 +404,84 @@ input[type="range"]::-moz-range-thumb {
   background: rgba(0, 255, 170, 0.05);
 }
 
+/* ─── Page enter animation ───────────────────────────────────────────────── */
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+#app.page-enter {
+  animation: pageFadeIn 0.22s ease both;
+}
+
+/* ─── Mobile bottom nav ──────────────────────────────────────────────────── */
+.mobile-nav {
+  display: none;
+}
+
+/* ─── Onboarding overlay ─────────────────────────────────────────────────── */
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 5, 15, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pageFadeIn 0.3s ease both;
+}
+
+.onboarding-overlay.onboarding-fade-out {
+  animation: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.onboarding-box {
+  max-width: 340px;
+  width: calc(100% - 40px);
+  padding: 36px 32px;
+  background: rgba(10, 10, 22, 0.95);
+  border: 1px solid rgba(0, 255, 170, 0.15);
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.onboarding-glyph {
+  font-size: 36px;
+  color: var(--accent);
+  text-shadow: 0 0 30px rgba(0, 255, 170, 0.5);
+  line-height: 1;
+}
+
+.onboarding-title {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: 0.1px;
+}
+
+.onboarding-text {
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(224, 224, 224, 0.55);
+  line-height: 1.65;
+  white-space: pre-line;
+}
+
+.onboarding-btn {
+  margin-top: 4px;
+  padding: 10px 32px;
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: 0.2px;
+}
+
 /* ─── Feed page ──────────────────────────────────────────────────────────── */
 .feed-wrap {
   position: fixed;
@@ -513,6 +591,18 @@ input[type="range"]::-moz-range-thumb {
   opacity: 0.85;
 }
 
+.feed-card-preview-img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+}
+
+.feed-sentinel {
+  height: 1px;
+  grid-column: 1 / -1;
+}
+
 .feed-card-info {
   padding: 10px 12px 10px;
   display: flex;
@@ -594,6 +684,50 @@ input[type="range"]::-moz-range-thumb {
   color: rgba(224, 224, 224, 0.3);
   font-size: 13px;
   padding: 40px 0;
+}
+
+.feed-empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.feed-empty-glyph {
+  font-size: 48px;
+  color: rgba(0, 255, 170, 0.2);
+  line-height: 1;
+}
+
+.feed-empty-title {
+  font-size: 18px;
+  font-weight: 400;
+  color: rgba(224, 224, 224, 0.5);
+}
+
+.feed-empty-sub {
+  font-size: 13px;
+  color: rgba(224, 224, 224, 0.3);
+}
+
+.feed-empty-action {
+  margin-top: 8px;
+  padding: 10px 24px;
+  border: 1px solid rgba(0, 255, 170, 0.3);
+  border-radius: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.feed-empty-action:hover {
+  background: rgba(0, 255, 170, 0.06);
+  border-color: var(--accent);
 }
 
 /* Skeleton loading */
@@ -867,5 +1001,67 @@ input[type="range"]::-moz-range-thumb {
   /* Page hint: hidden on mobile (nav + small screen = too cluttered) */
   .page-hint {
     display: none;
+  }
+
+  /* Hide top nav links on mobile — bottom nav handles navigation */
+  .nav a:not(.nav-user),
+  .nav .feed-link {
+    display: none;
+  }
+
+  /* Bottom tab bar */
+  .mobile-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: rgba(8, 8, 18, 0.92);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    z-index: 100;
+    align-items: stretch;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .mobile-nav-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    text-decoration: none;
+    color: rgba(224, 224, 224, 0.4);
+    transition: color 0.2s;
+    padding: 8px 0;
+  }
+
+  .mobile-nav-tab.active,
+  .mobile-nav-tab:hover {
+    color: var(--accent);
+  }
+
+  .mobile-nav-icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .mobile-nav-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+
+  /* Push scrollable pages above bottom nav */
+  .feed-wrap,
+  .profile-wrap {
+    padding-bottom: calc(60px + 20px);
+  }
+
+  /* Push controls drawer above bottom nav */
+  .controls {
+    bottom: 60px;
   }
 }
