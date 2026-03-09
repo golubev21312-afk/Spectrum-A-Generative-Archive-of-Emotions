@@ -70,11 +70,24 @@ float snoise(vec3 v) {
   return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
 }
 
+// Fractal Brownian Motion — 4 octaves of simplex noise
+float fbm(vec3 v) {
+  float value = 0.0;
+  float amplitude = 0.5;
+  float frequency = 1.0;
+  for (int i = 0; i < 4; i++) {
+    value += amplitude * snoise(v * frequency);
+    amplitude *= 0.5;
+    frequency *= 2.1;
+  }
+  return value;
+}
+
 void main() {
   vNormal = normal;
   vec3 pos = position;
 
-  float noise = snoise(pos * 1.5 + uTime * 0.3);
+  float noise = fbm(pos * 1.2 + uTime * 0.2);
   pos += normal * noise * uNoiseAmp;
 
   vPosition = pos;

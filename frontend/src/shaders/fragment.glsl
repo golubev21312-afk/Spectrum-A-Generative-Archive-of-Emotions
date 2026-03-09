@@ -33,10 +33,21 @@ void main() {
   float fresnel = 1.0 - abs(dot(viewDir, vNormal));
   fresnel = pow(fresnel, 2.0);
 
-  vec3 baseColor = hsl2rgb(hue, 0.8, 0.5);
-  vec3 edgeColor = hsl2rgb(mod(hue + 30.0, 360.0), 1.0, 0.7);
-  vec3 color = mix(baseColor, edgeColor, fresnel * 0.6);
+  // Iridescence: hue shifts with viewing angle and time
+  float iriAngle = fresnel * 2.5 + uTime * 0.3;
+  float iriHue = mod(hue + sin(iriAngle) * 45.0, 360.0);
+  vec3 iriColor = hsl2rgb(iriHue, 1.0, 0.62);
 
-  float alpha = (1.0 - uTransparency) * (0.6 + fresnel * 0.4);
+  // Rim lighting: tight bright glow at silhouette
+  float rim = pow(fresnel, 1.5);
+  vec3 rimColor = hsl2rgb(mod(hue + 60.0, 360.0), 1.0, 0.82);
+
+  // Compose layers
+  vec3 baseColor = hsl2rgb(hue, 0.8, 0.45);
+  vec3 color = mix(baseColor, iriColor, 0.35);
+  color = mix(color, rimColor, rim * 0.55);
+  color += rimColor * pow(fresnel, 4.5) * 0.4;
+
+  float alpha = (1.0 - uTransparency) * (0.5 + fresnel * 0.5);
   gl_FragColor = vec4(color, alpha);
 }
