@@ -56,6 +56,12 @@ const texts = {
   notFound: { ru: "Не найдено", en: "Not found" },
   loginToLike: { ru: "Войдите чтобы ставить лайки", en: "Log in to like" },
   backToFeed: { ru: "← Лента", en: "← Feed" },
+  onboardTitle: { ru: "Добро пожаловать в Spectrum", en: "Welcome to Spectrum" },
+  onboardText: { ru: "Двигайте слайдеры — куб меняет форму и цвет.\nКогда почувствуете нужное — сохраните эмоцию.", en: "Move the sliders — the cube changes shape and color.\nWhen it feels right — save your emotion." },
+  onboardOk: { ru: "Понятно", en: "Got it" },
+  feedEmptyTitle: { ru: "Пока тихо", en: "Still quiet here" },
+  feedEmptyText: { ru: "Станьте первым — создайте свою эмоцию", en: "Be the first — create your emotion" },
+  feedEmptyAction: { ru: "Создать эмоцию →", en: "Create emotion →" },
 } as const;
 
 interface EmotionRule {

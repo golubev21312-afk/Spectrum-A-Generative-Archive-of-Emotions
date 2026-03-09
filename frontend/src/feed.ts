@@ -1,6 +1,18 @@
 import { getFeed, likeEmotion, unlikeEmotion, isLoggedIn, EmotionResponse } from "./api";
 import { t, getLang } from "./i18n";
 
+function emptyState(): HTMLElement {
+  const el = document.createElement("div");
+  el.className = "feed-empty-state";
+  el.innerHTML = `
+    <div class="feed-empty-glyph">◈</div>
+    <div class="feed-empty-title">${t("feedEmptyTitle")}</div>
+    <div class="feed-empty-sub">${t("feedEmptyText")}</div>
+    <a href="#/create" class="feed-empty-action">${t("feedEmptyAction")}</a>
+  `;
+  return el;
+}
+
 const EMOTION_TYPES_EN = [
   "Rage","Passion","Anxiety","Energy","Joy","Hope","Calm",
   "Melancholy","Sadness","Mystery","Tenderness","Emptiness",
@@ -33,10 +45,20 @@ function createCard(emotion: EmotionResponse, onLikeToggle: (id: number, liked: 
   card.className = "feed-card";
   card.setAttribute("data-id", String(emotion.id));
 
-  // Preview
-  const preview = document.createElement("div");
-  preview.className = "feed-card-preview";
-  preview.setAttribute("style", emotionPreviewStyle(emotion.parameters));
+  // Preview — WebGL thumbnail if available, else CSS gradient fallback
+  let preview: HTMLElement;
+  if (emotion.thumbnail) {
+    const img = document.createElement("img");
+    img.className = "feed-card-preview feed-card-preview-img";
+    img.src = emotion.thumbnail;
+    img.loading = "lazy";
+    img.alt = emotion.emotion_type || "";
+    preview = img;
+  } else {
+    preview = document.createElement("div");
+    preview.className = "feed-card-preview";
+    preview.setAttribute("style", emotionPreviewStyle(emotion.parameters));
+  }
   preview.addEventListener("click", () => {
     location.hash = `#/emotion/${emotion.id}`;
   });
@@ -109,6 +131,9 @@ function createCard(emotion: EmotionResponse, onLikeToggle: (id: number, liked: 
   return card;
 }
 
+// Persist scroll position across navigations
+let savedScrollTop = 0;
+
 export function mountFeed(app: HTMLElement) {
   const hint = document.createElement("div");
   hint.className = "page-hint";
@@ -165,15 +190,13 @@ export function mountFeed(app: HTMLElement) {
   const grid = document.createElement("div");
   grid.className = "feed-grid";
 
-  // Load more
-  const loadMoreBtn = document.createElement("button");
-  loadMoreBtn.className = "action-btn feed-load-more";
-  loadMoreBtn.textContent = t("loadMore");
-  loadMoreBtn.style.display = "none";
+  // Infinite scroll sentinel
+  const sentinel = document.createElement("div");
+  sentinel.className = "feed-sentinel";
 
   wrap.appendChild(filters);
   wrap.appendChild(grid);
-  wrap.appendChild(loadMoreBtn);
+  wrap.appendChild(sentinel);
   app.appendChild(wrap);
 
   let currentPage = 1;
@@ -220,7 +243,7 @@ export function mountFeed(app: HTMLElement) {
       grid.querySelectorAll(".feed-card-skeleton").forEach(el => el.remove());
 
       if (data.items.length === 0 && currentPage === 1) {
-        grid.innerHTML = `<div class="feed-empty">${t("noEmotions")}</div>`;
+        grid.appendChild(emptyState());
       } else {
         data.items.forEach(emotion => {
           grid.appendChild(createCard(emotion, () => {}));
@@ -228,13 +251,13 @@ export function mountFeed(app: HTMLElement) {
       }
 
       const shown = (currentPage - 1) * 20 + data.items.length;
-      loadMoreBtn.style.display = shown < totalItems ? "block" : "none";
+      sentinel.style.display = shown < totalItems ? "block" : "none";
     } catch {
       grid.querySelectorAll(".feed-card-skeleton").forEach(el => el.remove());
       if (currentPage === 1) {
-        grid.innerHTML = `<div class="feed-empty">${t("noEmotions")}</div>`;
+        grid.appendChild(emptyState());
       }
-      loadMoreBtn.style.display = "none";
+      sentinel.style.display = "none";
     } finally {
       loading = false;
     }
@@ -268,14 +291,23 @@ export function mountFeed(app: HTMLElement) {
     }, 400);
   });
 
-  loadMoreBtn.addEventListener("click", () => {
-    currentPage++;
-    load();
-  });
+  // IntersectionObserver for infinite scroll
+  const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) {
+      currentPage++;
+      load();
+    }
+  }, { rootMargin: "200px" });
+  observer.observe(sentinel);
+
+  // Restore scroll position from previous visit
+  wrap.scrollTop = savedScrollTop;
+  wrap.addEventListener("scroll", () => { savedScrollTop = wrap.scrollTop; }, { passive: true });
 
   load(true);
 
   return () => {
     clearTimeout(authorTimer);
+    observer.disconnect();
   };
 }
