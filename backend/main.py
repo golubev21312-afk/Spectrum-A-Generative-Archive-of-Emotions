@@ -1,11 +1,13 @@
 import os
 import json
+from collections import defaultdict
 from contextlib import asynccontextmanager
+from time import time
 from typing import Optional
 
 import jwt
 import bcrypt
-from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi import FastAPI, HTTPException, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -16,6 +18,18 @@ JWT_SECRET = os.getenv("JWT_SECRET", "spectrum-secret-change-me")
 JWT_ALGORITHM = "HS256"
 
 security = HTTPBearer(auto_error=False)
+
+# Simple in-memory rate limiter: max 20 emotions per IP per 60 seconds
+_rate_store: dict[str, list[float]] = defaultdict(list)
+
+def _check_rate_limit(request: Request, limit: int = 20, window: int = 60) -> None:
+    ip = request.client.host if request.client else "unknown"
+    now = time()
+    timestamps = [t for t in _rate_store[ip] if now - t < window]
+    if len(timestamps) >= limit:
+        raise HTTPException(status_code=429, detail="Too many requests, slow down")
+    timestamps.append(now)
+    _rate_store[ip] = timestamps
 
 
 @asynccontextmanager
@@ -98,7 +112,8 @@ async def login(data: UserRegister):
 
 
 @app.post("/emotions", status_code=201)
-async def create_emotion(emotion: EmotionIn, user: dict | None = Depends(get_current_user)) -> dict:
+async def create_emotion(request: Request, emotion: EmotionIn, user: dict | None = Depends(get_current_user)) -> dict:
+    _check_rate_limit(request)
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
     pool = await get_pool()

@@ -1,11 +1,48 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+PARAM_RANGES: dict[str, tuple[float, float]] = {
+    "hue":            (0.0,   360.0),
+    "transparency":   (0.0,   1.0),
+    "rotationSpeed":  (0.0,   5.0),
+    "noiseAmplitude": (0.0,   2.0),
+    "particleDensity":(0.0,   500.0),
+}
+
+ALLOWED_EMOTION_TYPES = {
+    "Rage","Passion","Anxiety","Energy","Joy","Hope","Calm",
+    "Melancholy","Sadness","Mystery","Tenderness","Emptiness",
+    "Chaos","Harmony","Contemplation","Serenity",
+    "Ярость","Страсть","Тревога","Энергия","Радость","Надежда","Спокойствие",
+    "Меланхолия","Грусть","Мистика","Нежность","Пустота",
+    "Хаос","Гармония","Созерцание","Безмятежность",
+}
 
 
 class EmotionIn(BaseModel):
     parameters: dict
     emotion_type: Optional[str] = None
+
+    @field_validator("parameters")
+    @classmethod
+    def validate_parameters(cls, v: dict) -> dict:
+        for key, (lo, hi) in PARAM_RANGES.items():
+            if key not in v:
+                continue
+            val = v[key]
+            if not isinstance(val, (int, float)):
+                raise ValueError(f"{key} must be a number")
+            if not (lo <= float(val) <= hi):
+                raise ValueError(f"{key} must be between {lo} and {hi}")
+        return v
+
+    @field_validator("emotion_type")
+    @classmethod
+    def validate_emotion_type(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in ALLOWED_EMOTION_TYPES:
+            raise ValueError("unknown emotion_type")
+        return v
 
 
 class EmotionOut(BaseModel):
