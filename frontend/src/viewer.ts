@@ -42,19 +42,23 @@ export function mountViewer(app: HTMLElement) {
     authorTag.textContent = "";
     try {
       const emotion = await getRandomEmotion();
-      const params = emotion.parameters as unknown as CubeParams;
-      cubeScene.updateParams(params);
-      const emotionName = detectEmotion(emotion.parameters);
-      emotionTag.textContent = emotionName;
-      audio.setEmotion(emotionName);
-      const author = emotion.username || t("anonymous");
-      authorTag.textContent = `${t("author")}: ${author}`;
-      const date = new Date(emotion.created_at).toLocaleString();
-      info.textContent = `#${emotion.id} — ${date}`;
+      // Transition: scale cube out → apply params → scale back in
+      cubeScene.beginTransition(() => {
+        const params = emotion.parameters as unknown as CubeParams;
+        cubeScene.updateParams(params);
+        const emotionName = detectEmotion(emotion.parameters);
+        emotionTag.textContent = emotionName;
+        audio.setEmotion(emotionName);
+        const author = emotion.username || t("anonymous");
+        authorTag.textContent = `${t("author")}: ${author}`;
+        const date = new Date(emotion.created_at).toLocaleString();
+        info.textContent = `#${emotion.id} — ${date}`;
+        btn.disabled = false;
+      });
     } catch {
       info.textContent = t("noEmotions");
+      btn.disabled = false;
     }
-    btn.disabled = false;
   }
 
   btn.addEventListener("click", loadRandom);

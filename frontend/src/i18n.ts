@@ -37,6 +37,7 @@ const texts = {
   loginRequired: { ru: "Войдите, чтобы сохранять эмоции", en: "Log in to save emotions" },
   author: { ru: "Автор", en: "Author" },
   anonymous: { ru: "Аноним", en: "Anonymous" },
+  screenshot: { ru: "Скачать", en: "Screenshot" },
 } as const;
 
 interface EmotionRule {
