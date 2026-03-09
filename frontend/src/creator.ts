@@ -2,7 +2,7 @@ import { CubeScene } from "./cube";
 import { createControls } from "./controls";
 import { saveEmotion } from "./api";
 import { AmbientAudio } from "./audio";
-import { t } from "./i18n";
+import { t, detectEmotion } from "./i18n";
 
 // Particle force by emotion name (RU + EN)
 const EMOTION_FORCE: Record<string, number> = {
@@ -39,10 +39,12 @@ export function mountCreator(app: HTMLElement) {
   };
   document.addEventListener("click", startAudio);
 
+  let lastEmotionName = "";
   const controls = createControls(
     app,
     (params) => cubeScene.updateParams(params),
     (emotionName) => {
+      lastEmotionName = emotionName;
       audio.setEmotion(emotionName);
       cubeScene.setParticleForce(EMOTION_FORCE[emotionName] ?? 0);
     }
@@ -74,7 +76,8 @@ export function mountCreator(app: HTMLElement) {
     btn.textContent = t("saving");
     try {
       const params = controls.getValues();
-      const result = await saveEmotion(params as unknown as Record<string, number>);
+      const emotionType = lastEmotionName || detectEmotion(params as unknown as Record<string, number>);
+      const result = await saveEmotion(params as unknown as Record<string, number>, emotionType);
       btn.textContent = `${t("saved")} #${result.id}`;
       setTimeout(() => {
         btn.disabled = false;

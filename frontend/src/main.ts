@@ -1,5 +1,8 @@
 import { mountCreator } from "./creator";
 import { mountViewer } from "./viewer";
+import { mountFeed } from "./feed";
+import { mountEmotionPage } from "./emotionPage";
+import { mountProfile } from "./profile";
 import { t, getLang, setLang, Lang } from "./i18n";
 import { isLoggedIn, getUsername, clearAuth, login, register } from "./api";
 
@@ -19,6 +22,10 @@ function createNav(): HTMLElement {
   viewLink.href = "#/view";
   viewLink.textContent = t("view");
 
+  const feedLink = document.createElement("a");
+  feedLink.href = "#/feed";
+  feedLink.textContent = t("feed");
+
   const langBtn = document.createElement("button");
   langBtn.className = "lang-btn";
   langBtn.textContent = getLang() === "ru" ? "EN" : "RU";
@@ -30,12 +37,15 @@ function createNav(): HTMLElement {
 
   nav.appendChild(createLink);
   nav.appendChild(viewLink);
+  nav.appendChild(feedLink);
 
   if (isLoggedIn()) {
-    const userSpan = document.createElement("span");
-    userSpan.className = "nav-user";
-    userSpan.textContent = getUsername() || "";
-    nav.appendChild(userSpan);
+    const username = getUsername() || "";
+    const userLink = document.createElement("a");
+    userLink.href = `#/profile/${username}`;
+    userLink.className = "nav-user";
+    userLink.textContent = username;
+    nav.appendChild(userLink);
 
     const logoutBtn = document.createElement("button");
     logoutBtn.className = "lang-btn";
@@ -58,6 +68,7 @@ function createNav(): HTMLElement {
     const hash = location.hash || "#/create";
     createLink.classList.toggle("active", hash === "#/create");
     viewLink.classList.toggle("active", hash === "#/view");
+    feedLink.classList.toggle("active", hash.startsWith("#/feed") || hash.startsWith("#/emotion/") || hash.startsWith("#/profile/"));
   }
 
   const ac = new AbortController();
@@ -164,6 +175,16 @@ function route() {
 
   if (hash === "#/view") {
     cleanup = mountViewer(app) || null;
+  } else if (hash === "#/feed") {
+    cleanup = mountFeed(app) || null;
+  } else if (hash.startsWith("#/emotion/")) {
+    const id = parseInt(hash.slice("#/emotion/".length), 10);
+    if (!isNaN(id)) cleanup = mountEmotionPage(app, id) || null;
+    else cleanup = mountFeed(app) || null;
+  } else if (hash.startsWith("#/profile/")) {
+    const username = hash.slice("#/profile/".length);
+    if (username) cleanup = mountProfile(app, username) || null;
+    else location.hash = "#/feed";
   } else if (hash === "#/auth") {
     mountAuth(app);
   } else {
