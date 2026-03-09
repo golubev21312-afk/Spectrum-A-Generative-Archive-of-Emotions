@@ -40,6 +40,30 @@ async def init_db() -> None:
         await conn.execute("""
             ALTER TABLE emotions ADD COLUMN IF NOT EXISTS username VARCHAR(32);
         """)
+        await conn.execute("""
+            ALTER TABLE emotions ADD COLUMN IF NOT EXISTS emotion_type VARCHAR(32);
+        """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS likes (
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                emotion_id INTEGER REFERENCES emotions(id) ON DELETE CASCADE,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                PRIMARY KEY (user_id, emotion_id)
+            );
+        """)
+        # Indexes for performance
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_emotions_emotion_type ON emotions(emotion_type);
+        """)
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_emotions_created_at ON emotions(created_at DESC);
+        """)
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_emotions_user_id ON emotions(user_id);
+        """)
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_likes_emotion_id ON likes(emotion_id);
+        """)
 
 
 async def close_db() -> None:
