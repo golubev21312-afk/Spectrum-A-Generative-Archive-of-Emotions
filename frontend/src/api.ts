@@ -1,3 +1,7 @@
+import { getAuth, setAuth, isLoggedIn, getUsername } from "./state";
+
+export { isLoggedIn, getUsername, clearAuth } from "./state";
+
 const API_BASE = "http://localhost:8000";
 
 export interface EmotionResponse {
@@ -30,31 +34,9 @@ export interface AuthResponse {
   user: { id: number; username: string };
 }
 
-function getToken(): string | null {
-  return localStorage.getItem("token");
-}
-
-export function getUsername(): string | null {
-  return localStorage.getItem("username");
-}
-
-export function saveAuth(token: string, username: string): void {
-  localStorage.setItem("token", token);
-  localStorage.setItem("username", username);
-}
-
-export function clearAuth(): void {
-  localStorage.removeItem("token");
-  localStorage.removeItem("username");
-}
-
-export function isLoggedIn(): boolean {
-  return getToken() !== null;
-}
-
 function authHeaders(): Record<string, string> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = getToken();
+  const { token } = getAuth();
   if (token) headers["Authorization"] = `Bearer ${token}`;
   return headers;
 }
@@ -89,7 +71,7 @@ export async function login(
     throw new Error(err.detail || `Login failed: ${res.status}`);
   }
   const data: AuthResponse = await res.json();
-  saveAuth(data.token, data.user.username);
+  setAuth(data.token, data.user.username);
   return data;
 }
 

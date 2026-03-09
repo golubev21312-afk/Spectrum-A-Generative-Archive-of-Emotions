@@ -4,7 +4,8 @@ import { mountFeed } from "./feed";
 import { mountEmotionPage } from "./emotionPage";
 import { mountProfile } from "./profile";
 import { t, getLang, setLang, Lang } from "./i18n";
-import { isLoggedIn, getUsername, clearAuth, login, register } from "./api";
+import { login, register } from "./api";
+import { isLoggedIn, getUsername, clearAuth, onAuthChange } from "./state";
 
 const app = document.getElementById("app")!;
 
@@ -193,4 +194,5 @@ function route() {
 }
 
 window.addEventListener("hashchange", route);
+onAuthChange(route);
 route();
