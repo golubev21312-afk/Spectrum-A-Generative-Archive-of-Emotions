@@ -60,8 +60,12 @@ function createNav(): HTMLElement {
     viewLink.classList.toggle("active", hash === "#/view");
   }
 
-  window.addEventListener("hashchange", updateActive);
+  const ac = new AbortController();
+  window.addEventListener("hashchange", updateActive, { signal: ac.signal });
   updateActive();
+
+  nav.dataset.cleanup = "";
+  (nav as any)._cleanup = () => ac.abort();
 
   return nav;
 }
@@ -148,6 +152,10 @@ function route() {
     cleanup();
     cleanup = null;
   }
+
+  // Clean up previous nav's hashchange listener before wiping DOM
+  const prevNav = app.querySelector(".nav") as any;
+  prevNav?._cleanup?.();
 
   app.innerHTML = "";
   app.appendChild(createNav());

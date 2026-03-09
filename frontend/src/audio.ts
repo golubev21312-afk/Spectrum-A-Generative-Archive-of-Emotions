@@ -113,8 +113,9 @@ export class AmbientAudio {
 
   setEmotion(name: string) {
     const key = NAME_TO_KEY[name] || "serenity";
-    if (key === this.currentEmotion || !this.ctx || !this.started) return;
+    if (key === this.currentEmotion) return;
     this.currentEmotion = key;
+    if (!this.ctx || !this.started) return;
 
     const s = SOUNDS[key];
     const t = this.ctx.currentTime;
