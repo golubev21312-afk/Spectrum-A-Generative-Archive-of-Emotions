@@ -183,12 +183,27 @@ export function mountFeed(app: HTMLElement) {
   let totalItems = 0;
   let loading = false;
 
+  function showSkeletons(count = 8) {
+    for (let i = 0; i < count; i++) {
+      const card = document.createElement("div");
+      card.className = "feed-card-skeleton";
+      card.innerHTML = `
+        <div class="skeleton-preview"></div>
+        <div class="skeleton-info">
+          <div class="skeleton-line skeleton-line-title"></div>
+          <div class="skeleton-line skeleton-line-meta"></div>
+        </div>`;
+      grid.appendChild(card);
+    }
+  }
+
   async function load(reset = false) {
     if (loading) return;
     loading = true;
     if (reset) {
       currentPage = 1;
       grid.innerHTML = "";
+      showSkeletons();
     }
 
     try {
@@ -201,6 +216,9 @@ export function mountFeed(app: HTMLElement) {
       });
       totalItems = data.total;
 
+      // Remove skeleton placeholders before inserting real cards
+      grid.querySelectorAll(".feed-card-skeleton").forEach(el => el.remove());
+
       if (data.items.length === 0 && currentPage === 1) {
         grid.innerHTML = `<div class="feed-empty">${t("noEmotions")}</div>`;
       } else {
@@ -212,6 +230,7 @@ export function mountFeed(app: HTMLElement) {
       const shown = (currentPage - 1) * 20 + data.items.length;
       loadMoreBtn.style.display = shown < totalItems ? "block" : "none";
     } catch {
+      grid.querySelectorAll(".feed-card-skeleton").forEach(el => el.remove());
       if (currentPage === 1) {
         grid.innerHTML = `<div class="feed-empty">${t("noEmotions")}</div>`;
       }
