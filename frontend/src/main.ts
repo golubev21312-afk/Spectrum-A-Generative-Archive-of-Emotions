@@ -3,8 +3,9 @@ import { mountViewer } from "./viewer";
 import { mountFeed } from "./feed";
 import { mountEmotionPage } from "./emotionPage";
 import { mountProfile } from "./profile";
+import { mountNotifications } from "./notifications";
 import { t, getLang, setLang, Lang } from "./i18n";
-import { login, register } from "./api";
+import { login, register, getUnreadCount } from "./api";
 import { isLoggedIn, getUsername, clearAuth, onAuthChange } from "./state";
 
 const app = document.getElementById("app")!;
@@ -42,6 +43,24 @@ function createNav(): HTMLElement {
 
   if (isLoggedIn()) {
     const username = getUsername() || "";
+
+    // Notification bell
+    const bell = document.createElement("a");
+    bell.href = "#/notifications";
+    bell.className = "nav-bell";
+    bell.textContent = "🔔";
+    nav.appendChild(bell);
+
+    // Fetch unread count async
+    getUnreadCount().then(count => {
+      if (count > 0) {
+        const badge = document.createElement("span");
+        badge.className = "nav-bell-badge";
+        badge.textContent = count > 9 ? "9+" : String(count);
+        bell.appendChild(badge);
+      }
+    });
+
     const userLink = document.createElement("a");
     userLink.href = `#/profile/${username}`;
     userLink.className = "nav-user";
@@ -190,6 +209,8 @@ function route() {
     const username = hash.slice("#/profile/".length);
     if (username) cleanup = mountProfile(app, username) || null;
     else location.hash = "#/feed";
+  } else if (hash === "#/notifications") {
+    cleanup = mountNotifications(app) || null;
   } else if (hash === "#/auth") {
     mountAuth(app);
   } else {
@@ -202,8 +223,9 @@ function createMobileNav(): HTMLElement {
   bar.className = "mobile-nav";
 
   const tabs = [
-    { href: "#/create", icon: "✦", labelKey: "create" as const },
-    { href: "#/feed",   icon: "◈", labelKey: "feed" as const },
+    { href: "#/create",        icon: "✦", labelKey: "create" as const },
+    { href: "#/feed",          icon: "◈", labelKey: "feed" as const },
+    { href: "#/notifications", icon: "🔔", labelKey: "notifications" as const },
   ] as const;
 
   const hash = location.hash || "#/create";

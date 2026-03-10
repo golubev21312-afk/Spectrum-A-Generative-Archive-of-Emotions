@@ -159,8 +159,14 @@ export function mountFeed(app: HTMLElement) {
   sortPop.className = "feed-sort-btn";
   sortPop.textContent = t("sortPopular");
 
+  const sortFollowing = document.createElement("button");
+  sortFollowing.className = "feed-sort-btn";
+  sortFollowing.textContent = t("followingFeed");
+  if (!isLoggedIn()) sortFollowing.style.display = "none";
+
   sortWrap.appendChild(sortNew);
   sortWrap.appendChild(sortPop);
+  sortWrap.appendChild(sortFollowing);
 
   // Emotion type filter
   const typeSelect = document.createElement("select");
@@ -203,6 +209,7 @@ export function mountFeed(app: HTMLElement) {
   let currentSort: "new" | "popular" = "new";
   let currentType = "";
   let currentAuthor = "";
+  let currentFollowing = false;
   let totalItems = 0;
   let loading = false;
 
@@ -236,6 +243,7 @@ export function mountFeed(app: HTMLElement) {
         sort: currentSort,
         emotion_type: currentType || undefined,
         author: currentAuthor || undefined,
+        following: currentFollowing || undefined,
       });
       totalItems = data.total;
 
@@ -265,15 +273,27 @@ export function mountFeed(app: HTMLElement) {
 
   sortNew.addEventListener("click", () => {
     currentSort = "new";
+    currentFollowing = false;
     sortNew.classList.add("active");
     sortPop.classList.remove("active");
+    sortFollowing.classList.remove("active");
     load(true);
   });
 
   sortPop.addEventListener("click", () => {
     currentSort = "popular";
+    currentFollowing = false;
     sortPop.classList.add("active");
     sortNew.classList.remove("active");
+    sortFollowing.classList.remove("active");
+    load(true);
+  });
+
+  sortFollowing.addEventListener("click", () => {
+    currentFollowing = true;
+    sortFollowing.classList.add("active");
+    sortNew.classList.remove("active");
+    sortPop.classList.remove("active");
     load(true);
   });
 

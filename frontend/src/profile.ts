@@ -1,4 +1,5 @@
-import { getUserProfile, likeEmotion, unlikeEmotion, isLoggedIn, EmotionResponse } from "./api";
+import { getUserProfile, likeEmotion, unlikeEmotion, isLoggedIn, followUser, unfollowUser, getLikedEmotions, EmotionResponse } from "./api";
+import { getUsername } from "./state";
 import { t } from "./i18n";
 
 // Generative avatar — deterministic pattern from username hash
@@ -150,25 +151,103 @@ export function mountProfile(app: HTMLElement, username: string) {
     stats.innerHTML = `
       <span>${profile.emotion_count} ${t("emotions")}</span>
       <span>${profile.likes_count} ${t("likes")}</span>
+      <span>${profile.followers_count} ${t("followers")}</span>
+      <span>${profile.following_count} ${t("following")}</span>
       <span>${t("joined")}: ${joinDate}</span>
     `;
 
     headerInfo.appendChild(nameEl);
     headerInfo.appendChild(stats);
+
+    // Follow button (only show for other users)
+    const isOwnProfile = getUsername() === profile.username;
+    if (isLoggedIn() && !isOwnProfile) {
+      let following = profile.is_following;
+      const followBtn = document.createElement("button");
+      followBtn.className = `action-btn profile-follow-btn${following ? " following" : ""}`;
+      followBtn.textContent = following ? t("unfollow") : t("follow");
+      followBtn.addEventListener("click", async () => {
+        followBtn.disabled = true;
+        try {
+          if (following) {
+            await unfollowUser(profile.username);
+            following = false;
+          } else {
+            await followUser(profile.username);
+            following = true;
+          }
+          followBtn.textContent = following ? t("unfollow") : t("follow");
+          followBtn.classList.toggle("following", following);
+        } catch {
+          // silent
+        } finally {
+          followBtn.disabled = false;
+        }
+      });
+      headerInfo.appendChild(followBtn);
+    }
+
     header.appendChild(avatarCanvas);
     header.appendChild(headerInfo);
+
+    // Tabs
+    const tabs = document.createElement("div");
+    tabs.className = "profile-tabs";
+
+    const tabEmotions = document.createElement("button");
+    tabEmotions.className = "profile-tab active";
+    tabEmotions.textContent = t("myEmotions");
+
+    const tabLiked = document.createElement("button");
+    tabLiked.className = "profile-tab";
+    tabLiked.textContent = t("likedTab");
+
+    tabs.appendChild(tabEmotions);
+    tabs.appendChild(tabLiked);
 
     // Grid
     const grid = document.createElement("div");
     grid.className = "feed-grid";
 
-    if (profile.emotions.length === 0) {
-      grid.innerHTML = `<div class="feed-empty">${t("noEmotions")}</div>`;
-    } else {
-      profile.emotions.forEach(e => grid.appendChild(createMiniCard(e)));
+    function showEmotions() {
+      grid.innerHTML = "";
+      if (profile.emotions.length === 0) {
+        grid.innerHTML = `<div class="feed-empty">${t("noEmotions")}</div>`;
+      } else {
+        profile.emotions.forEach(e => grid.appendChild(createMiniCard(e)));
+      }
     }
 
+    function showLiked() {
+      grid.innerHTML = `<div class="feed-empty">${t("loading")}</div>`;
+      getLikedEmotions(profile.username).then(feed => {
+        grid.innerHTML = "";
+        if (feed.items.length === 0) {
+          grid.innerHTML = `<div class="feed-empty">${t("noEmotions")}</div>`;
+        } else {
+          feed.items.forEach(e => grid.appendChild(createMiniCard(e)));
+        }
+      }).catch(() => {
+        grid.innerHTML = `<div class="feed-empty">${t("notFound")}</div>`;
+      });
+    }
+
+    tabEmotions.addEventListener("click", () => {
+      tabEmotions.classList.add("active");
+      tabLiked.classList.remove("active");
+      showEmotions();
+    });
+
+    tabLiked.addEventListener("click", () => {
+      tabLiked.classList.add("active");
+      tabEmotions.classList.remove("active");
+      showLiked();
+    });
+
+    showEmotions();
+
     wrap.appendChild(header);
+    wrap.appendChild(tabs);
     wrap.appendChild(grid);
   }).catch(() => {
     wrap.innerHTML = `<div class="feed-empty">${t("notFound")}</div>`;
