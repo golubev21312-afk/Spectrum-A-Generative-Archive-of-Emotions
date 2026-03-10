@@ -1,5 +1,6 @@
 import { likeEmotion, unlikeEmotion, isLoggedIn, EmotionResponse } from "./api";
 import { t } from "./i18n";
+import { createAvatarCanvas } from "./avatar";
 
 export function emotionPreviewStyle(params: Record<string, number>): string {
   const h = params.hue ?? 160;
@@ -47,11 +48,24 @@ export function createCard(
 
   const meta = document.createElement("div");
   meta.className = "feed-card-meta";
-  const authorHtml = emotion.username
-    ? `<a href="#/profile/${emotion.username}" class="feed-card-author">${emotion.username}</a>`
-    : `<span class="feed-card-author">${t("anonymous")}</span>`;
-  const date = new Date(emotion.created_at).toLocaleDateString();
-  meta.innerHTML = `${authorHtml} · ${date}`;
+  if (emotion.username) {
+    const av = createAvatarCanvas(emotion.username, 18);
+    av.className = "feed-card-avatar";
+    meta.appendChild(av);
+    const authorLink = document.createElement("a");
+    authorLink.href = `#/profile/${emotion.username}`;
+    authorLink.className = "feed-card-author";
+    authorLink.textContent = emotion.username;
+    meta.appendChild(authorLink);
+  } else {
+    const anon = document.createElement("span");
+    anon.className = "feed-card-author";
+    anon.textContent = t("anonymous");
+    meta.appendChild(anon);
+  }
+  const dateSep = document.createElement("span");
+  dateSep.textContent = ` · ${new Date(emotion.created_at).toLocaleDateString()}`;
+  meta.appendChild(dateSep);
 
   const likeRow = document.createElement("div");
   likeRow.className = "feed-card-like-row";
@@ -81,7 +95,7 @@ export function createCard(
     likeCount.textContent = String(count);
     likeBtn.classList.toggle("liked", liked);
     try {
-      liked ? await likeEmotion(emotion.id) : await unlikeEmotion(emotion.id);
+      if (liked) { await likeEmotion(emotion.id); } else { await unlikeEmotion(emotion.id); }
       onLikeToggle(emotion.id, liked);
     } catch {
       liked = !liked;

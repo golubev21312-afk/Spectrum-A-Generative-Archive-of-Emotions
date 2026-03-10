@@ -1,5 +1,5 @@
-import os
 import json
+import os
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from time import time
@@ -9,10 +9,14 @@ import jwt
 import bcrypt
 from fastapi import FastAPI, HTTPException, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from database import get_pool, init_db, close_db
-from models import EmotionIn, EmotionOut, EmotionFeed, UserRegister, UserOut, UserProfile, NotificationOut, CommentIn, CommentOut, BioUpdate, EmotionTypeUpdate
+from helpers import build_emotion
+from models import (EmotionIn, EmotionOut, EmotionFeed, UserRegister, UserOut, UserProfile,
+                    NotificationOut, CommentIn, CommentOut, BioUpdate, EmotionTypeUpdate,
+                    OkResponse, LoginOut, EmotionCreatedOut, UserListItem)
 
 JWT_SECRET = os.getenv("JWT_SECRET", "spectrum-secret-change-me")
 JWT_ALGORITHM = "HS256"
@@ -41,9 +45,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Spectrum API", lifespan=lifespan)
 
+_cors_origins_env = os.getenv("CORS_ORIGINS", "")
+_cors_origins: list[str] = (
+    [o.strip() for o in _cors_origins_env.split(",") if o.strip()]
+    if _cors_origins_env
+    else ["*"]
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -57,8 +68,28 @@ def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
 
+ACCESS_TOKEN_TTL = int(os.getenv("ACCESS_TOKEN_TTL", "900"))    # 15 min
+REFRESH_TOKEN_TTL = int(os.getenv("REFRESH_TOKEN_TTL", "2592000"))  # 30 days
+
+
 def create_token(user_id: int, username: str) -> str:
-    return jwt.encode({"user_id": user_id, "username": username}, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    """Short-lived access token (15 min by default)."""
+    from time import time as _time
+    exp = int(_time()) + ACCESS_TOKEN_TTL
+    return jwt.encode(
+        {"user_id": user_id, "username": username, "type": "access", "exp": exp},
+        JWT_SECRET, algorithm=JWT_ALGORITHM,
+    )
+
+
+def create_refresh_token(user_id: int, username: str) -> str:
+    """Long-lived refresh token (30 days by default)."""
+    from time import time as _time
+    exp = int(_time()) + REFRESH_TOKEN_TTL
+    return jwt.encode(
+        {"user_id": user_id, "username": username, "type": "refresh", "exp": exp},
+        JWT_SECRET, algorithm=JWT_ALGORITHM,
+    )
 
 
 async def get_current_user(
@@ -68,23 +99,14 @@ async def get_current_user(
         return None
     try:
         payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        if payload.get("type") == "refresh":
+            raise HTTPException(status_code=401, detail="Use refresh endpoint to get access token")
         return {"user_id": payload["user_id"], "username": payload["username"]}
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-
-def _build_emotion(row, liked_ids: set[int] = set()) -> EmotionOut:
-    return EmotionOut(
-        id=row["id"],
-        parameters=json.loads(row["parameters"]),
-        created_at=row["created_at"],
-        username=row["username"],
-        emotion_type=row["emotion_type"],
-        likes_count=row["likes_count"],
-        liked_by_me=row["id"] in liked_ids,
-        thumbnail=row["thumbnail"],
-        views=row["views"] if "views" in row.keys() else 0,
-    )
 
 
 @app.post("/register", response_model=UserOut)
@@ -102,7 +124,7 @@ async def register(data: UserRegister):
     return UserOut(id=row["id"], username=row["username"])
 
 
-@app.post("/login")
+@app.post("/login", response_model=LoginOut)
 async def login(data: UserRegister):
     pool = await get_pool()
     async with pool.acquire() as conn:
@@ -110,11 +132,32 @@ async def login(data: UserRegister):
     if row is None or not verify_password(data.password, row["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     token = create_token(row["id"], row["username"])
-    return {"token": token, "user": {"id": row["id"], "username": row["username"]}}
+    refresh = create_refresh_token(row["id"], row["username"])
+    return {"token": token, "refresh_token": refresh, "user": {"id": row["id"], "username": row["username"]}}
 
 
-@app.post("/emotions", status_code=201)
-async def create_emotion(request: Request, emotion: EmotionIn, user: dict | None = Depends(get_current_user)) -> dict:
+@app.post("/refresh", response_model=LoginOut)
+async def refresh_token(body: dict):
+    """Exchange a refresh token for a new access token."""
+    rt = body.get("refresh_token", "")
+    if not rt:
+        raise HTTPException(status_code=400, detail="refresh_token required")
+    try:
+        payload = jwt.decode(rt, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Refresh token expired, please log in again")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+    if payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Not a refresh token")
+    new_access = create_token(payload["user_id"], payload["username"])
+    new_refresh = create_refresh_token(payload["user_id"], payload["username"])
+    return {"token": new_access, "refresh_token": new_refresh,
+            "user": {"id": payload["user_id"], "username": payload["username"]}}
+
+
+@app.post("/emotions", status_code=201, response_model=EmotionCreatedOut)
+async def create_emotion(request: Request, emotion: EmotionIn, user: dict | None = Depends(get_current_user)):
     _check_rate_limit(request)
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -157,7 +200,51 @@ async def get_random_emotion(user: dict | None = Depends(get_current_user)):
                 liked_ids.add(row["id"])
     if row is None:
         raise HTTPException(status_code=404, detail="No emotions saved yet")
-    return _build_emotion(row, liked_ids)
+    return build_emotion(row, liked_ids)
+
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
+
+@app.get("/share/{emotion_id}", response_class=HTMLResponse)
+async def share_emotion(emotion_id: int):
+    """Returns an HTML page with Open Graph meta tags for social sharing."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """SELECT e.id, e.emotion_type, e.username, e.thumbnail
+               FROM emotions e WHERE e.id = $1""",
+            emotion_id
+        )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Emotion not found")
+
+    title = row["emotion_type"] or "Emotion"
+    author = row["username"] or "Anonymous"
+    desc = f"A generative emotion by {author} on Spectrum"
+    url = f"{FRONTEND_URL}/#/emotion/{emotion_id}"
+    img = row["thumbnail"] or ""
+
+    og_image = f'<meta property="og:image" content="{img}" />' if img else ""
+    return HTMLResponse(f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>{title} — Spectrum</title>
+  <meta property="og:title" content="{title} — Spectrum" />
+  <meta property="og:description" content="{desc}" />
+  <meta property="og:url" content="{url}" />
+  <meta property="og:type" content="website" />
+  {og_image}
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="{title} — Spectrum" />
+  <meta name="twitter:description" content="{desc}" />
+  <meta http-equiv="refresh" content="0; url={url}" />
+</head>
+<body>
+  <p>Redirecting to <a href="{url}">{title}</a>…</p>
+</body>
+</html>""")
 
 
 @app.get("/emotions", response_model=EmotionFeed)
@@ -237,7 +324,7 @@ async def get_emotions(
             liked_ids = {r["emotion_id"] for r in liked_rows}
 
     return EmotionFeed(
-        items=[_build_emotion(r, liked_ids) for r in rows],
+        items=[build_emotion(r, liked_ids) for r in rows],
         total=total,
         page=page,
         limit=limit,
@@ -270,10 +357,10 @@ async def get_emotion(emotion_id: int, user: dict | None = Depends(get_current_u
                 liked_ids.add(emotion_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Emotion not found")
-    return _build_emotion(row, liked_ids)
+    return build_emotion(row, liked_ids)
 
 
-@app.post("/emotions/{emotion_id}/like", status_code=201)
+@app.post("/emotions/{emotion_id}/like", status_code=201, response_model=OkResponse)
 async def like_emotion(emotion_id: int, user: dict = Depends(get_current_user)):
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -300,7 +387,7 @@ async def like_emotion(emotion_id: int, user: dict = Depends(get_current_user)):
     return {"ok": True}
 
 
-@app.delete("/emotions/{emotion_id}/like", status_code=200)
+@app.delete("/emotions/{emotion_id}/like", status_code=200, response_model=OkResponse)
 async def unlike_emotion(emotion_id: int, user: dict = Depends(get_current_user)):
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -370,7 +457,7 @@ async def get_user_profile(username: str, user: dict | None = Depends(get_curren
         created_at=user_row["created_at"],
         emotion_count=len(emotion_rows),
         likes_count=likes_count_row["count"],
-        emotions=[_build_emotion(r, liked_ids) for r in emotion_rows],
+        emotions=[build_emotion(r, liked_ids) for r in emotion_rows],
         followers_count=followers_count_row["count"],
         following_count=following_count_row["count"],
         is_following=is_following,
@@ -378,7 +465,7 @@ async def get_user_profile(username: str, user: dict | None = Depends(get_curren
     )
 
 
-@app.patch("/emotions/{emotion_id}/type", status_code=200)
+@app.patch("/emotions/{emotion_id}/type", status_code=200, response_model=OkResponse)
 async def update_emotion_type(emotion_id: int, data: EmotionTypeUpdate, user: dict = Depends(get_current_user)):
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -395,7 +482,7 @@ async def update_emotion_type(emotion_id: int, data: EmotionTypeUpdate, user: di
     return {"ok": True}
 
 
-@app.patch("/users/{username}/bio", status_code=200)
+@app.patch("/users/{username}/bio", status_code=200, response_model=OkResponse)
 async def update_bio(username: str, data: BioUpdate, user: dict = Depends(get_current_user)):
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -407,7 +494,7 @@ async def update_bio(username: str, data: BioUpdate, user: dict = Depends(get_cu
     return {"ok": True}
 
 
-@app.delete("/emotions/{emotion_id}", status_code=200)
+@app.delete("/emotions/{emotion_id}", status_code=200, response_model=OkResponse)
 async def delete_emotion(emotion_id: int, user: dict = Depends(get_current_user)):
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -437,7 +524,7 @@ async def get_notifications(user: dict = Depends(get_current_user)):
     return [NotificationOut(**dict(r)) for r in rows]
 
 
-@app.post("/notifications/read", status_code=200)
+@app.post("/notifications/read", status_code=200, response_model=OkResponse)
 async def mark_notifications_read(user: dict = Depends(get_current_user)):
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -487,7 +574,7 @@ async def add_comment(emotion_id: int, data: CommentIn, user: dict = Depends(get
     return CommentOut(**dict(row))
 
 
-@app.post("/users/{username}/follow", status_code=201)
+@app.post("/users/{username}/follow", status_code=201, response_model=OkResponse)
 async def follow_user(username: str, user: dict = Depends(get_current_user)):
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -508,7 +595,7 @@ async def follow_user(username: str, user: dict = Depends(get_current_user)):
     return {"ok": True}
 
 
-@app.delete("/users/{username}/follow", status_code=200)
+@app.delete("/users/{username}/follow", status_code=200, response_model=OkResponse)
 async def unfollow_user(username: str, user: dict = Depends(get_current_user)):
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -521,6 +608,40 @@ async def unfollow_user(username: str, user: dict = Depends(get_current_user)):
                 user["user_id"], target["id"]
             )
     return {"ok": True}
+
+
+@app.get("/users/{username}/followers", response_model=list[UserListItem])
+async def get_followers(username: str):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        target = await conn.fetchrow("SELECT id FROM users WHERE username=$1", username)
+        if not target:
+            raise HTTPException(status_code=404, detail="User not found")
+        rows = await conn.fetch(
+            """SELECT u.username FROM follows f
+               JOIN users u ON u.id = f.follower_id
+               WHERE f.following_id = $1
+               ORDER BY f.created_at DESC""",
+            target["id"]
+        )
+    return [{"username": r["username"]} for r in rows]
+
+
+@app.get("/users/{username}/following", response_model=list[UserListItem])
+async def get_following(username: str):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        target = await conn.fetchrow("SELECT id FROM users WHERE username=$1", username)
+        if not target:
+            raise HTTPException(status_code=404, detail="User not found")
+        rows = await conn.fetch(
+            """SELECT u.username FROM follows f
+               JOIN users u ON u.id = f.following_id
+               WHERE f.follower_id = $1
+               ORDER BY f.created_at DESC""",
+            target["id"]
+        )
+    return [{"username": r["username"]} for r in rows]
 
 
 @app.get("/users/{username}/liked", response_model=EmotionFeed)
@@ -560,7 +681,7 @@ async def get_liked_emotions(
             )
             liked_ids = {r["emotion_id"] for r in liked_rows}
     return EmotionFeed(
-        items=[_build_emotion(r, liked_ids) for r in rows],
+        items=[build_emotion(r, liked_ids) for r in rows],
         total=total_row["count"],
         page=page,
         limit=limit,

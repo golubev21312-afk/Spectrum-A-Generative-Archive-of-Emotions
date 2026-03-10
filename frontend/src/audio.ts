@@ -140,6 +140,17 @@ export class AmbientAudio {
     }, 1500);
   }
 
+  setMuted(muted: boolean) {
+    if (!this.gain || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    if (muted) {
+      this.gain.gain.setTargetAtTime(0, t, 0.15);
+    } else {
+      const s = SOUNDS[this.currentEmotion];
+      this.gain.gain.setTargetAtTime(s.volume, t, 0.15);
+    }
+  }
+
   dispose() {
     if (!this.started) return;
     this.stopOscs();

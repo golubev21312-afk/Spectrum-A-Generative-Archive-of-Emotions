@@ -77,6 +77,17 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
   cloneBtn.className = "action-btn";
   cloneBtn.textContent = t("clone");
 
+  const muteBtn = document.createElement("button");
+  muteBtn.className = "action-btn mute-btn";
+  muteBtn.textContent = t("mute");
+  let muted = false;
+  muteBtn.addEventListener("click", () => {
+    muted = !muted;
+    audio.setMuted(muted);
+    muteBtn.textContent = muted ? t("unmute") : t("mute");
+    muteBtn.classList.toggle("muted", muted);
+  });
+
   const shareBtn = document.createElement("button");
   shareBtn.className = "action-btn screenshot-btn";
   shareBtn.textContent = t("share");
@@ -89,6 +100,7 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
   likeRow.appendChild(likeBtn);
   likeRow.appendChild(cloneBtn);
   likeRow.appendChild(shareBtn);
+  likeRow.appendChild(muteBtn);
   likeRow.appendChild(deleteBtn);
 
   overlay.appendChild(backBtn);
@@ -100,7 +112,9 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
   app.appendChild(overlay);
 
   shareBtn.addEventListener("click", () => {
-    navigator.clipboard.writeText(location.href).then(() => {
+    // Share the backend /share/:id URL — it has OG meta tags and redirects to the SPA
+    const shareUrl = `http://localhost:8000/share/${id}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
       shareBtn.textContent = t("copied");
       setTimeout(() => { shareBtn.textContent = t("share"); }, 2000);
     });
@@ -138,7 +152,7 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
     likesCount += liked ? 1 : -1;
     updateLikeBtn();
     try {
-      liked ? await likeEmotion(id) : await unlikeEmotion(id);
+      if (liked) { await likeEmotion(id); } else { await unlikeEmotion(id); }
     } catch {
       liked = !liked;
       likesCount += liked ? 1 : -1;

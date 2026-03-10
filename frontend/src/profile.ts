@@ -1,39 +1,8 @@
-import { getUserProfile, isLoggedIn, followUser, unfollowUser, getLikedEmotions, updateBio } from "./api";
+import { getUserProfile, getFollowers, getFollowing, isLoggedIn, followUser, unfollowUser, getLikedEmotions, updateBio } from "./api";
 import { createCard } from "./card";
 import { getUsername } from "./state";
 import { t } from "./i18n";
-
-// Generative avatar — deterministic pattern from username hash
-function drawAvatar(canvas: HTMLCanvasElement, username: string) {
-  const ctx = canvas.getContext("2d")!;
-  const size = canvas.width;
-
-  let hash = 0;
-  for (let i = 0; i < username.length; i++) {
-    hash = ((hash << 5) - hash + username.charCodeAt(i)) | 0;
-  }
-  const rng = (n: number) => {
-    hash = ((hash * 1664525 + 1013904223) | 0) + n;
-    return (hash >>> 0) / 0xffffffff;
-  };
-
-  const hue = Math.floor(rng(0) * 360);
-  ctx.fillStyle = `hsl(${hue}, 30%, 12%)`;
-  ctx.fillRect(0, 0, size, size);
-
-  const cell = size / 5;
-  for (let row = 0; row < 5; row++) {
-    for (let col = 0; col < 3; col++) {
-      if (rng(row * 3 + col) > 0.45) {
-        const h2 = (hue + Math.floor(rng(col) * 60) - 30 + 360) % 360;
-        const l = 45 + Math.floor(rng(row) * 30);
-        ctx.fillStyle = `hsl(${h2}, 80%, ${l}%)`;
-        ctx.fillRect(col * cell, row * cell, cell, cell);
-        ctx.fillRect((4 - col) * cell, row * cell, cell, cell);
-      }
-    }
-  }
-}
+import { drawAvatar } from "./avatar";
 
 export function mountProfile(app: HTMLElement, username: string) {
   const wrap = document.createElement("div");
@@ -173,12 +142,28 @@ export function mountProfile(app: HTMLElement, username: string) {
     tabLiked.className = "profile-tab";
     tabLiked.textContent = t("likedTab");
 
+    const tabFollowers = document.createElement("button");
+    tabFollowers.className = "profile-tab";
+    tabFollowers.textContent = `${t("followersTab")} (${profile.followers_count})`;
+
+    const tabFollowing = document.createElement("button");
+    tabFollowing.className = "profile-tab";
+    tabFollowing.textContent = `${t("followingTab")} (${profile.following_count})`;
+
     tabs.appendChild(tabEmotions);
     tabs.appendChild(tabLiked);
+    tabs.appendChild(tabFollowers);
+    tabs.appendChild(tabFollowing);
 
     // ── Grid ───────────────────────────────────────────────
     const grid = document.createElement("div");
     grid.className = "feed-grid";
+
+    const allTabs = [tabEmotions, tabLiked, tabFollowers, tabFollowing];
+    function setActive(tab: HTMLButtonElement) {
+      allTabs.forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+    }
 
     function showEmotions() {
       grid.innerHTML = "";
@@ -203,16 +188,43 @@ export function mountProfile(app: HTMLElement, username: string) {
       });
     }
 
-    tabEmotions.addEventListener("click", () => {
-      tabEmotions.classList.add("active");
-      tabLiked.classList.remove("active");
-      showEmotions();
-    });
+    function showUserList(fetchFn: () => Promise<{ username: string }[]>) {
+      grid.innerHTML = `<div class="feed-empty">${t("loading")}</div>`;
+      fetchFn().then(users => {
+        grid.innerHTML = "";
+        if (users.length === 0) {
+          grid.innerHTML = `<div class="feed-empty">${t("noEmotions")}</div>`;
+          return;
+        }
+        users.forEach(u => {
+          const row = document.createElement("div");
+          row.className = "profile-user-row";
+          const av = document.createElement("canvas");
+          av.width = 32; av.height = 32;
+          av.className = "avatar-canvas";
+          drawAvatar(av, u.username);
+          const link = document.createElement("a");
+          link.href = `#/profile/${u.username}`;
+          link.className = "profile-user-row-name";
+          link.textContent = u.username;
+          row.appendChild(av);
+          row.appendChild(link);
+          grid.appendChild(row);
+        });
+      }).catch(() => {
+        grid.innerHTML = `<div class="feed-empty">${t("notFound")}</div>`;
+      });
+    }
 
-    tabLiked.addEventListener("click", () => {
-      tabLiked.classList.add("active");
-      tabEmotions.classList.remove("active");
-      showLiked();
+    tabEmotions.addEventListener("click", () => { setActive(tabEmotions); showEmotions(); });
+    tabLiked.addEventListener("click", () => { setActive(tabLiked); showLiked(); });
+    tabFollowers.addEventListener("click", () => {
+      setActive(tabFollowers);
+      showUserList(() => getFollowers(profile.username));
+    });
+    tabFollowing.addEventListener("click", () => {
+      setActive(tabFollowing);
+      showUserList(() => getFollowing(profile.username));
     });
 
     showEmotions();
