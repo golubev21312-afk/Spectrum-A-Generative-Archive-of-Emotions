@@ -113,3 +113,21 @@ class CommentOut(BaseModel):
     username: str
     text: str
     created_at: datetime
+
+
+class OkResponse(BaseModel):
+    ok: bool = True
+
+
+class LoginOut(BaseModel):
+    token: str
+    refresh_token: Optional[str] = None
+    user: UserOut
+
+
+class EmotionCreatedOut(BaseModel):
+    id: int
+
+
+class UserListItem(BaseModel):
+    username: str
