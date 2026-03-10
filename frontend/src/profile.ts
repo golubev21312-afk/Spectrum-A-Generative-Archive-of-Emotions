@@ -1,4 +1,5 @@
-import { getUserProfile, likeEmotion, unlikeEmotion, isLoggedIn, followUser, unfollowUser, getLikedEmotions, EmotionResponse } from "./api";
+import { getUserProfile, isLoggedIn, followUser, unfollowUser, getLikedEmotions, updateBio } from "./api";
+import { createCard } from "./card";
 import { getUsername } from "./state";
 import { t } from "./i18n";
 
@@ -7,7 +8,6 @@ function drawAvatar(canvas: HTMLCanvasElement, username: string) {
   const ctx = canvas.getContext("2d")!;
   const size = canvas.width;
 
-  // Simple hash
   let hash = 0;
   for (let i = 0; i < username.length; i++) {
     hash = ((hash << 5) - hash + username.charCodeAt(i)) | 0;
@@ -21,7 +21,6 @@ function drawAvatar(canvas: HTMLCanvasElement, username: string) {
   ctx.fillStyle = `hsl(${hue}, 30%, 12%)`;
   ctx.fillRect(0, 0, size, size);
 
-  // Draw 5×5 symmetric pattern
   const cell = size / 5;
   for (let row = 0; row < 5; row++) {
     for (let col = 0; col < 3; col++) {
@@ -30,89 +29,10 @@ function drawAvatar(canvas: HTMLCanvasElement, username: string) {
         const l = 45 + Math.floor(rng(row) * 30);
         ctx.fillStyle = `hsl(${h2}, 80%, ${l}%)`;
         ctx.fillRect(col * cell, row * cell, cell, cell);
-        ctx.fillRect((4 - col) * cell, row * cell, cell, cell); // mirror
+        ctx.fillRect((4 - col) * cell, row * cell, cell, cell);
       }
     }
   }
-}
-
-function emotionPreviewStyle(params: Record<string, number>): string {
-  const h = params.hue ?? 160;
-  const tr = params.transparency ?? 0.3;
-  const l1 = Math.round(15 + (1 - tr) * 20);
-  const l2 = Math.round(30 + (1 - tr) * 25);
-  return `background: linear-gradient(135deg,
-    hsl(${h},70%,${l1}%) 0%,
-    hsl(${(h + 40) % 360},80%,${l2}%) 50%,
-    hsl(${(h + 80) % 360},60%,${l1}%) 100%);`;
-}
-
-function createMiniCard(emotion: EmotionResponse): HTMLElement {
-  const card = document.createElement("div");
-  card.className = "feed-card";
-  card.style.cursor = "pointer";
-  card.addEventListener("click", () => { location.hash = `#/emotion/${emotion.id}`; });
-
-  const preview = document.createElement("div");
-  preview.className = "feed-card-preview";
-  preview.setAttribute("style", emotionPreviewStyle(emotion.parameters));
-
-  const info = document.createElement("div");
-  info.className = "feed-card-info";
-
-  const label = document.createElement("div");
-  label.className = "feed-card-emotion";
-  label.textContent = emotion.emotion_type || "—";
-
-  const date = document.createElement("div");
-  date.className = "feed-card-meta";
-  date.textContent = new Date(emotion.created_at).toLocaleDateString();
-
-  const likeRow = document.createElement("div");
-  likeRow.className = "feed-card-like-row";
-
-  const likeBtn = document.createElement("button");
-  likeBtn.className = `feed-like-btn${emotion.liked_by_me ? " liked" : ""}`;
-
-  let liked = emotion.liked_by_me;
-  let count = emotion.likes_count;
-
-  const likeIcon = document.createElement("span");
-  likeIcon.className = "like-icon";
-  likeIcon.textContent = liked ? "♥" : "♡";
-
-  const likeCount = document.createElement("span");
-  likeCount.className = "like-count";
-  likeCount.textContent = String(count);
-
-  likeBtn.appendChild(likeIcon);
-  likeBtn.addEventListener("click", async (e) => {
-    e.stopPropagation();
-    if (!isLoggedIn()) return;
-    liked = !liked;
-    count += liked ? 1 : -1;
-    likeIcon.textContent = liked ? "♥" : "♡";
-    likeCount.textContent = String(count);
-    likeBtn.classList.toggle("liked", liked);
-    try {
-      liked ? await likeEmotion(emotion.id) : await unlikeEmotion(emotion.id);
-    } catch {
-      liked = !liked;
-      count += liked ? 1 : -1;
-      likeIcon.textContent = liked ? "♥" : "♡";
-      likeCount.textContent = String(count);
-      likeBtn.classList.toggle("liked", liked);
-    }
-  });
-
-  likeRow.appendChild(likeBtn);
-  likeRow.appendChild(likeCount);
-  info.appendChild(label);
-  info.appendChild(date);
-  info.appendChild(likeRow);
-  card.appendChild(preview);
-  card.appendChild(info);
-  return card;
 }
 
 export function mountProfile(app: HTMLElement, username: string) {
@@ -128,7 +48,7 @@ export function mountProfile(app: HTMLElement, username: string) {
   getUserProfile(username).then(profile => {
     wrap.innerHTML = "";
 
-    // Header
+    // ── Header ─────────────────────────────────────────────
     const header = document.createElement("div");
     header.className = "profile-header";
 
@@ -159,8 +79,43 @@ export function mountProfile(app: HTMLElement, username: string) {
     headerInfo.appendChild(nameEl);
     headerInfo.appendChild(stats);
 
-    // Follow button (only show for other users)
+    // Bio
     const isOwnProfile = getUsername() === profile.username;
+    const bioWrap = document.createElement("div");
+    bioWrap.className = "profile-bio-wrap";
+
+    if (isOwnProfile) {
+      const bioArea = document.createElement("textarea");
+      bioArea.className = "profile-bio-input";
+      bioArea.maxLength = 160;
+      bioArea.placeholder = t("bioPlaceholder");
+      bioArea.value = profile.bio || "";
+      bioArea.rows = 2;
+
+      const bioSave = document.createElement("button");
+      bioSave.className = "action-btn profile-bio-save";
+      bioSave.textContent = t("saveBio");
+      bioSave.addEventListener("click", async () => {
+        bioSave.disabled = true;
+        try {
+          await updateBio(profile.username, bioArea.value.trim());
+        } finally {
+          bioSave.disabled = false;
+        }
+      });
+
+      bioWrap.appendChild(bioArea);
+      bioWrap.appendChild(bioSave);
+    } else if (profile.bio) {
+      const bioText = document.createElement("div");
+      bioText.className = "profile-bio-text";
+      bioText.textContent = profile.bio;
+      bioWrap.appendChild(bioText);
+    }
+
+    headerInfo.appendChild(bioWrap);
+
+    // Follow button (only for other users)
     if (isLoggedIn() && !isOwnProfile) {
       let following = profile.is_following;
       const followBtn = document.createElement("button");
@@ -178,19 +133,35 @@ export function mountProfile(app: HTMLElement, username: string) {
           }
           followBtn.textContent = following ? t("unfollow") : t("follow");
           followBtn.classList.toggle("following", following);
-        } catch {
-          // silent
-        } finally {
+        } catch { /* silent */ } finally {
           followBtn.disabled = false;
         }
       });
       headerInfo.appendChild(followBtn);
     }
 
+    // Export JSON (own profile)
+    if (isOwnProfile) {
+      const exportBtn = document.createElement("button");
+      exportBtn.className = "action-btn profile-export-btn";
+      exportBtn.textContent = t("exportJson");
+      exportBtn.addEventListener("click", () => {
+        const data = JSON.stringify(profile.emotions, null, 2);
+        const blob = new Blob([data], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `spectrum-${profile.username}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+      headerInfo.appendChild(exportBtn);
+    }
+
     header.appendChild(avatarCanvas);
     header.appendChild(headerInfo);
 
-    // Tabs
+    // ── Tabs ───────────────────────────────────────────────
     const tabs = document.createElement("div");
     tabs.className = "profile-tabs";
 
@@ -205,7 +176,7 @@ export function mountProfile(app: HTMLElement, username: string) {
     tabs.appendChild(tabEmotions);
     tabs.appendChild(tabLiked);
 
-    // Grid
+    // ── Grid ───────────────────────────────────────────────
     const grid = document.createElement("div");
     grid.className = "feed-grid";
 
@@ -214,7 +185,7 @@ export function mountProfile(app: HTMLElement, username: string) {
       if (profile.emotions.length === 0) {
         grid.innerHTML = `<div class="feed-empty">${t("noEmotions")}</div>`;
       } else {
-        profile.emotions.forEach(e => grid.appendChild(createMiniCard(e)));
+        profile.emotions.forEach((e, i) => grid.appendChild(createCard(e, () => {}, i)));
       }
     }
 
@@ -225,7 +196,7 @@ export function mountProfile(app: HTMLElement, username: string) {
         if (feed.items.length === 0) {
           grid.innerHTML = `<div class="feed-empty">${t("noEmotions")}</div>`;
         } else {
-          feed.items.forEach(e => grid.appendChild(createMiniCard(e)));
+          feed.items.forEach((e, i) => grid.appendChild(createCard(e, () => {}, i)));
         }
       }).catch(() => {
         grid.innerHTML = `<div class="feed-empty">${t("notFound")}</div>`;

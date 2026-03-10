@@ -1,9 +1,20 @@
 import { CubeScene, CubeParams } from "./cube";
-import { getEmotion, likeEmotion, unlikeEmotion, isLoggedIn, deleteEmotion } from "./api";
+import { getEmotion, likeEmotion, unlikeEmotion, isLoggedIn, deleteEmotion, updateEmotionType } from "./api";
 import { AmbientAudio } from "./audio";
 import { t, detectEmotion } from "./i18n";
 import { mountComments } from "./comments";
 import { getUsername } from "./state";
+
+const EMOTION_TYPES_EN = [
+  "Rage","Passion","Anxiety","Energy","Joy","Hope","Calm",
+  "Melancholy","Sadness","Mystery","Tenderness","Emptiness",
+  "Chaos","Harmony","Contemplation","Serenity",
+];
+const EMOTION_TYPES_RU = [
+  "Ярость","Страсть","Тревога","Энергия","Радость","Надежда","Спокойствие",
+  "Меланхолия","Грусть","Мистика","Нежность","Пустота",
+  "Хаос","Гармония","Созерцание","Безмятежность",
+];
 
 export function mountEmotionPage(app: HTMLElement, id: number) {
   const cubeScene = new CubeScene(app);
@@ -23,8 +34,30 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
   const authorTag = document.createElement("div");
   authorTag.className = "viewer-author";
 
+  const emotionTagWrap = document.createElement("div");
+  emotionTagWrap.className = "viewer-emotion-wrap";
+
   const emotionTag = document.createElement("div");
   emotionTag.className = "viewer-emotion";
+
+  const editTypeBtn = document.createElement("button");
+  editTypeBtn.className = "edit-type-btn";
+  editTypeBtn.textContent = t("editType");
+  editTypeBtn.style.display = "none";
+
+  const typeSelect = document.createElement("select");
+  typeSelect.className = "edit-type-select";
+  typeSelect.style.display = "none";
+  [...EMOTION_TYPES_EN, ...EMOTION_TYPES_RU].forEach(name => {
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    typeSelect.appendChild(opt);
+  });
+
+  emotionTagWrap.appendChild(emotionTag);
+  emotionTagWrap.appendChild(editTypeBtn);
+  emotionTagWrap.appendChild(typeSelect);
 
   const info = document.createElement("div");
   info.className = "viewer-info";
@@ -60,7 +93,7 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
 
   overlay.appendChild(backBtn);
   overlay.appendChild(authorTag);
-  overlay.appendChild(emotionTag);
+  overlay.appendChild(emotionTagWrap);
   overlay.appendChild(info);
   overlay.appendChild(viewsTag);
   overlay.appendChild(likeRow);
@@ -129,10 +162,27 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
       viewsTag.className = "viewer-views";
     }
 
-    // Show delete button for owner
+    // Accent color based on hue
+    const h = emotion.parameters.hue ?? 160;
+    document.documentElement.style.setProperty("--accent", `hsl(${h}, 90%, 55%)`);
+
+    // Show owner-only controls
     if (isLoggedIn() && getUsername() === emotion.username) {
       deleteBtn.style.display = "";
+      editTypeBtn.style.display = "";
+      typeSelect.value = emotion.emotion_type || "";
     }
+
+    editTypeBtn.addEventListener("click", () => {
+      const editing = typeSelect.style.display === "none";
+      typeSelect.style.display = editing ? "" : "none";
+      editTypeBtn.textContent = editing ? "✓" : t("editType");
+      if (!editing && typeSelect.value) {
+        updateEmotionType(id, typeSelect.value).then(() => {
+          emotionTag.textContent = typeSelect.value;
+        }).catch(() => {});
+      }
+    });
 
     // Wire up clone button with actual params
     cloneBtn.onclick = () => {
@@ -161,5 +211,6 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
     audio.dispose();
     document.removeEventListener("click", startAudio);
     commentsPanel.remove();
+    document.documentElement.style.removeProperty("--accent");
   };
 }
