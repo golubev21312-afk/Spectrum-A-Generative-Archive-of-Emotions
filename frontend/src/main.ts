@@ -7,6 +7,10 @@ import { mountNotifications } from "./notifications";
 import { t, getLang, setLang, Lang } from "./i18n";
 import { login, register, getUnreadCount } from "./api";
 import { isLoggedIn, getUsername, clearAuth, onAuthChange } from "./state";
+import { initTheme, toggleTheme, getTheme } from "./theme";
+import { parseRoute } from "./router";
+
+initTheme();
 
 const app = document.getElementById("app")!;
 
@@ -82,13 +86,23 @@ function createNav(): HTMLElement {
     nav.appendChild(authLink);
   }
 
+  const themeBtn = document.createElement("button");
+  themeBtn.className = "theme-btn";
+  themeBtn.title = "Toggle theme";
+  themeBtn.textContent = getTheme() === "dark" ? "☀" : "🌙";
+  themeBtn.addEventListener("click", () => {
+    const next = toggleTheme();
+    themeBtn.textContent = next === "dark" ? "☀" : "🌙";
+  });
+
   nav.appendChild(langBtn);
+  nav.appendChild(themeBtn);
 
   function updateActive() {
-    const hash = location.hash || "#/create";
-    createLink.classList.toggle("active", hash === "#/create");
-    viewLink.classList.toggle("active", hash === "#/view");
-    feedLink.classList.toggle("active", hash.startsWith("#/feed") || hash.startsWith("#/emotion/") || hash.startsWith("#/profile/"));
+    const r = parseRoute(location.hash);
+    createLink.classList.toggle("active", r.name === "create");
+    viewLink.classList.toggle("active", r.name === "view");
+    feedLink.classList.toggle("active", r.name === "feed" || r.name === "emotion" || r.name === "profile");
   }
 
   const ac = new AbortController();
@@ -195,26 +209,16 @@ function route() {
   app.appendChild(createNav());
   app.appendChild(createMobileNav());
 
-  const hash = location.hash || "#/create";
+  const route = parseRoute(location.hash);
 
-  if (hash === "#/view") {
-    cleanup = mountViewer(app) || null;
-  } else if (hash === "#/feed") {
-    cleanup = mountFeed(app) || null;
-  } else if (hash.startsWith("#/emotion/")) {
-    const id = parseInt(hash.slice("#/emotion/".length), 10);
-    if (!isNaN(id)) cleanup = mountEmotionPage(app, id) || null;
-    else cleanup = mountFeed(app) || null;
-  } else if (hash.startsWith("#/profile/")) {
-    const username = hash.slice("#/profile/".length);
-    if (username) cleanup = mountProfile(app, username) || null;
-    else location.hash = "#/feed";
-  } else if (hash === "#/notifications") {
-    cleanup = mountNotifications(app) || null;
-  } else if (hash === "#/auth") {
-    mountAuth(app);
-  } else {
-    cleanup = mountCreator(app) || null;
+  switch (route.name) {
+    case "view":          cleanup = mountViewer(app) || null; break;
+    case "feed":          cleanup = mountFeed(app) || null; break;
+    case "emotion":       cleanup = mountEmotionPage(app, route.id) || null; break;
+    case "profile":       cleanup = mountProfile(app, route.username) || null; break;
+    case "notifications": cleanup = mountNotifications(app) || null; break;
+    case "auth":          mountAuth(app); break;
+    default:              cleanup = mountCreator(app) || null;
   }
 }
 
