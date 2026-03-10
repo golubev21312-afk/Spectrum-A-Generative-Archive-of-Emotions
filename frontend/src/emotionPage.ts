@@ -1,8 +1,9 @@
 import { CubeScene, CubeParams } from "./cube";
-import { getEmotion, likeEmotion, unlikeEmotion, isLoggedIn } from "./api";
+import { getEmotion, likeEmotion, unlikeEmotion, isLoggedIn, deleteEmotion } from "./api";
 import { AmbientAudio } from "./audio";
 import { t, detectEmotion } from "./i18n";
 import { mountComments } from "./comments";
+import { getUsername } from "./state";
 
 export function mountEmotionPage(app: HTMLElement, id: number) {
   const cubeScene = new CubeScene(app);
@@ -29,24 +30,39 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
   info.className = "viewer-info";
   info.textContent = t("loading");
 
-  // Like button
+  const viewsTag = document.createElement("div");
+  viewsTag.className = "viewer-views";
+
+  // Like button + actions row
   const likeRow = document.createElement("div");
   likeRow.className = "emotion-page-like-row";
 
   const likeBtn = document.createElement("button");
   likeBtn.className = "action-btn like-action-btn";
 
+  const cloneBtn = document.createElement("button");
+  cloneBtn.className = "action-btn";
+  cloneBtn.textContent = t("clone");
+
   const shareBtn = document.createElement("button");
   shareBtn.className = "action-btn screenshot-btn";
   shareBtn.textContent = t("share");
 
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "action-btn delete-btn";
+  deleteBtn.textContent = t("deleteEmotion");
+  deleteBtn.style.display = "none";
+
   likeRow.appendChild(likeBtn);
+  likeRow.appendChild(cloneBtn);
   likeRow.appendChild(shareBtn);
+  likeRow.appendChild(deleteBtn);
 
   overlay.appendChild(backBtn);
   overlay.appendChild(authorTag);
   overlay.appendChild(emotionTag);
   overlay.appendChild(info);
+  overlay.appendChild(viewsTag);
   overlay.appendChild(likeRow);
   app.appendChild(overlay);
 
@@ -55,6 +71,21 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
       shareBtn.textContent = t("copied");
       setTimeout(() => { shareBtn.textContent = t("share"); }, 2000);
     });
+  });
+
+  cloneBtn.addEventListener("click", () => {
+    // Will be filled after emotion loads
+  });
+
+  deleteBtn.addEventListener("click", async () => {
+    if (!confirm(t("confirmDelete"))) return;
+    deleteBtn.disabled = true;
+    try {
+      await deleteEmotion(id);
+      location.hash = "#/feed";
+    } catch {
+      deleteBtn.disabled = false;
+    }
   });
 
   let liked = false;
@@ -92,6 +123,22 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
     liked = emotion.liked_by_me;
     likesCount = emotion.likes_count;
     updateLikeBtn();
+
+    if ((emotion.views ?? 0) > 0) {
+      viewsTag.textContent = `${emotion.views} ${t("views")}`;
+      viewsTag.className = "viewer-views";
+    }
+
+    // Show delete button for owner
+    if (isLoggedIn() && getUsername() === emotion.username) {
+      deleteBtn.style.display = "";
+    }
+
+    // Wire up clone button with actual params
+    cloneBtn.onclick = () => {
+      sessionStorage.setItem("spectrum_clone", JSON.stringify(emotion.parameters));
+      location.hash = "#/create";
+    };
 
     cubeScene.beginTransition(() => {
       const params = emotion.parameters as unknown as CubeParams;

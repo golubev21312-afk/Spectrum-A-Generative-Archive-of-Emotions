@@ -90,6 +90,17 @@ export function mountCreator(app: HTMLElement) {
     }
   );
 
+  // Clone: pre-fill controls from sessionStorage
+  const cloneRaw = sessionStorage.getItem("spectrum_clone");
+  if (cloneRaw) {
+    sessionStorage.removeItem("spectrum_clone");
+    try {
+      const cloneParams = JSON.parse(cloneRaw);
+      controls.setValues(cloneParams);
+      cubeScene.updateParams(cloneParams);
+    } catch { /* ignore */ }
+  }
+
   const btnWrap = document.createElement("div");
   btnWrap.className = "viewer-overlay";
 

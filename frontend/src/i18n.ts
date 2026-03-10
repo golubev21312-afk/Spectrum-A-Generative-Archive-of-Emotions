@@ -79,6 +79,12 @@ const texts = {
   followingFeed: { ru: "Подписки", en: "Following" },
   likedTab: { ru: "Лайки", en: "Liked" },
   myEmotions: { ru: "Эмоции", en: "Emotions" },
+  clone: { ru: "Клонировать", en: "Clone" },
+  views: { ru: "просмотров", en: "views" },
+  deleteEmotion: { ru: "Удалить", en: "Delete" },
+  confirmDelete: { ru: "Удалить эту эмоцию?", en: "Delete this emotion?" },
+  search: { ru: "Поиск...", en: "Search..." },
+  sortTrending: { ru: "Трендовые", en: "Trending" },
 } as const;
 
 interface EmotionRule {

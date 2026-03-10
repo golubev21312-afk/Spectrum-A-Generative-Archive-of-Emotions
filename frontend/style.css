@@ -1413,3 +1413,22 @@ input[type="range"]::-moz-range-thumb {
     bottom: 60px;
   }
 }
+
+/* ── Views counter ── */
+.viewer-views {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.35);
+  margin: 2px 0 6px;
+  letter-spacing: 0.04em;
+}
+
+/* ── Delete button ── */
+.delete-btn {
+  background: rgba(255, 60, 60, 0.12);
+  border-color: rgba(255, 60, 60, 0.3);
+  color: #ff6b6b;
+}
+.delete-btn:hover {
+  background: rgba(255, 60, 60, 0.25);
+  border-color: rgba(255, 60, 60, 0.5);
+}

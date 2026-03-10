@@ -13,6 +13,7 @@ export interface EmotionResponse {
   likes_count: number;
   liked_by_me: boolean;
   thumbnail?: string;
+  views?: number;
 }
 
 export interface EmotionFeed {
@@ -125,12 +126,21 @@ export async function getEmotion(id: number): Promise<EmotionResponse> {
   return res.json();
 }
 
+export async function deleteEmotion(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/emotions/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+}
+
 export async function getFeed(params: {
   page?: number;
   limit?: number;
   emotion_type?: string;
   sort?: "new" | "popular";
   author?: string;
+  q?: string;
   following?: boolean;
 }): Promise<EmotionFeed> {
   const q = new URLSearchParams();
@@ -139,6 +149,7 @@ export async function getFeed(params: {
   if (params.emotion_type) q.set("emotion_type", params.emotion_type);
   if (params.sort) q.set("sort", params.sort);
   if (params.author) q.set("author", params.author);
+  if (params.q) q.set("q", params.q);
   if (params.following) q.set("following", "true");
   const res = await fetch(`${API_BASE}/emotions?${q}`, {
     headers: authHeaders(),

@@ -182,15 +182,15 @@ export function mountFeed(app: HTMLElement) {
     typeSelect.appendChild(opt);
   });
 
-  // Author search
-  const authorInput = document.createElement("input");
-  authorInput.type = "text";
-  authorInput.className = "feed-author-input auth-input";
-  authorInput.placeholder = t("searchAuthor");
+  // Search (emotion type or author)
+  const searchInput = document.createElement("input");
+  searchInput.type = "text";
+  searchInput.className = "feed-author-input auth-input";
+  searchInput.placeholder = t("search");
 
   filters.appendChild(sortWrap);
   filters.appendChild(typeSelect);
-  filters.appendChild(authorInput);
+  filters.appendChild(searchInput);
 
   // Grid
   const grid = document.createElement("div");
@@ -208,7 +208,7 @@ export function mountFeed(app: HTMLElement) {
   let currentPage = 1;
   let currentSort: "new" | "popular" = "new";
   let currentType = "";
-  let currentAuthor = "";
+  let currentQ = "";
   let currentFollowing = false;
   let totalItems = 0;
   let loading = false;
@@ -242,7 +242,7 @@ export function mountFeed(app: HTMLElement) {
         limit: 20,
         sort: currentSort,
         emotion_type: currentType || undefined,
-        author: currentAuthor || undefined,
+        q: currentQ || undefined,
         following: currentFollowing || undefined,
       });
       totalItems = data.total;
@@ -302,11 +302,11 @@ export function mountFeed(app: HTMLElement) {
     load(true);
   });
 
-  let authorTimer: ReturnType<typeof setTimeout>;
-  authorInput.addEventListener("input", () => {
-    clearTimeout(authorTimer);
-    authorTimer = setTimeout(() => {
-      currentAuthor = authorInput.value.trim();
+  let searchTimer: ReturnType<typeof setTimeout>;
+  searchInput.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      currentQ = searchInput.value.trim();
       load(true);
     }, 400);
   });
@@ -327,7 +327,7 @@ export function mountFeed(app: HTMLElement) {
   load(true);
 
   return () => {
-    clearTimeout(authorTimer);
+    clearTimeout(searchTimer);
     observer.disconnect();
   };
 }

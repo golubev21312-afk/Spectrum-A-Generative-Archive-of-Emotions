@@ -23,7 +23,7 @@ export function createControls(
   container: HTMLElement,
   onChange: (params: Partial<CubeParams>) => void,
   onEmotionChange?: (emotionName: string) => void
-): { getValues: () => CubeParams } {
+): { getValues: () => CubeParams; setValues: (params: Partial<CubeParams>) => void } {
   const panel = document.createElement("div");
   panel.className = "controls";
 
@@ -43,6 +43,9 @@ export function createControls(
   panel.appendChild(emotionBox);
 
   const values: Record<string, number> = {};
+  const sliderInputs: Record<string, HTMLInputElement> = {};
+  const sliderSpans: Record<string, HTMLElement> = {};
+  const sliderSteps: Record<string, number> = {};
 
   function updateEmotion() {
     const name = detectEmotion(values);
@@ -52,6 +55,7 @@ export function createControls(
 
   for (const cfg of SLIDERS) {
     values[cfg.key] = cfg.default;
+    sliderSteps[cfg.key] = cfg.step;
 
     const group = document.createElement("div");
     group.className = "slider-group";
@@ -76,6 +80,9 @@ export function createControls(
     input.step = String(cfg.step);
     input.value = String(cfg.default);
 
+    sliderInputs[cfg.key] = input;
+    sliderSpans[cfg.key] = valueSpan;
+
     input.addEventListener("input", () => {
       const v = parseFloat(input.value);
       values[cfg.key] = v;
@@ -95,5 +102,16 @@ export function createControls(
 
   return {
     getValues: () => ({ ...values }) as unknown as CubeParams,
+    setValues: (params: Partial<CubeParams>) => {
+      for (const [key, val] of Object.entries(params)) {
+        if (key in values && typeof val === "number") {
+          values[key] = val;
+          if (sliderInputs[key]) sliderInputs[key].value = String(val);
+          if (sliderSpans[key]) sliderSpans[key].textContent = sliderSteps[key] < 1 ? val.toFixed(2) : String(val);
+        }
+      }
+      onChange({ ...params });
+      updateEmotion();
+    },
   };
 }
