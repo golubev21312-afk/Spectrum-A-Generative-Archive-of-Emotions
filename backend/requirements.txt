@@ -4,3 +4,8 @@ asyncpg
 python-dotenv
 pyjwt
 bcrypt
+pytest
+pytest-asyncio
+httpx
+alembic
+psycopg2-binary

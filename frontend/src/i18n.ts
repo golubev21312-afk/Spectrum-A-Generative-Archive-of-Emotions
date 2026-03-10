@@ -91,6 +91,13 @@ const texts = {
   saveBio: { ru: "Сохранить", en: "Save" },
   exportJson: { ru: "Экспорт JSON", en: "Export JSON" },
   editType: { ru: "Изменить тип", en: "Edit type" },
+  autoPlay: { ru: "Авто", en: "Auto" },
+  autoStop: { ru: "Стоп", en: "Stop" },
+  nextIn: { ru: "Следующая через", en: "Next in" },
+  followersTab: { ru: "Подписчики", en: "Followers" },
+  followingTab: { ru: "Подписки", en: "Following" },
+  mute: { ru: "Звук выкл", en: "Mute" },
+  unmute: { ru: "Звук вкл", en: "Unmute" },
 } as const;
 
 interface EmotionRule {

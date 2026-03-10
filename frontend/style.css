@@ -1569,3 +1569,160 @@ input[type="range"]::-moz-range-thumb {
   font-size: 0.78rem;
   padding: 5px 12px;
 }
+
+/* ── Viewer: auto-play mode ─────────────────────────────────── */
+.viewer-btn-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+}
+.viewer-auto-btn.active {
+  background: rgba(0, 255, 170, 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.viewer-countdown {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.45);
+  margin-top: 6px;
+  letter-spacing: 0.05em;
+}
+
+/* ── 7.1 Card hover 3D tilt ─────────────────────────────────── */
+.feed-card {
+  perspective: 600px;
+}
+.feed-card-preview {
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(.25,.8,.25,1), box-shadow 0.35s ease;
+}
+.feed-card:hover .feed-card-preview {
+  transform: rotateY(12deg) rotateX(-4deg) scale(1.03);
+  box-shadow: -6px 6px 20px rgba(0,0,0,0.4);
+}
+
+/* ── 7.3 Avatar in cards ─────────────────────────────────────── */
+.feed-card-avatar {
+  display: inline-block;
+  vertical-align: middle;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  margin-right: 5px;
+  flex-shrink: 0;
+}
+.feed-card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0;
+}
+
+/* ── 8.4 Profile user list (followers/following tabs) ─────────── */
+.profile-user-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.07);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.profile-user-row:hover {
+  background: rgba(255,255,255,0.08);
+}
+.profile-user-row .avatar-canvas {
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.profile-user-row-name {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+.profile-user-row-name:hover {
+  text-decoration: underline;
+}
+
+/* ── 9.1 Mute button on emotion page ────────────────────────── */
+.mute-btn.muted {
+  opacity: 0.5;
+}
+
+/* Fix: override global canvas { width:100% !important } for avatar canvases */
+canvas.feed-card-avatar,
+canvas.avatar-canvas {
+  width: auto !important;
+  height: auto !important;
+  display: inline-block !important;
+}
+canvas.feed-card-avatar {
+  width: 18px !important;
+  height: 18px !important;
+}
+canvas.profile-avatar {
+  width: 80px !important;
+  height: 80px !important;
+}
+canvas.avatar-canvas {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+/* 7.3 — Avatar shimmer animation */
+@keyframes avatarShimmer {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+canvas.avatar-canvas,
+canvas.feed-card-avatar {
+  animation: avatarShimmer 3.5s ease-in-out infinite;
+}
+
+/* ── 7.4 Light theme ────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg: #f0f0f5;
+  --accent: #007a55;
+  --panel-bg: rgba(240, 240, 248, 0.88);
+  --text: #1a1a2e;
+}
+[data-theme="light"] html,
+[data-theme="light"] body,
+html[data-theme="light"],
+html[data-theme="light"] body {
+  background: var(--bg);
+  color: var(--text);
+}
+[data-theme="light"] .nav,
+html[data-theme="light"] .nav {
+  background: rgba(230, 230, 240, 0.92);
+}
+[data-theme="light"] .feed-card,
+html[data-theme="light"] .feed-card {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(0,0,0,0.1);
+}
+[data-theme="light"] .feed-card-emotion,
+html[data-theme="light"] .feed-card-emotion {
+  color: var(--accent);
+}
+html[data-theme="light"] #app {
+  background: var(--bg);
+}
+
+.theme-btn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 15px;
+  padding: 4px 10px;
+  transition: border-color 0.2s;
+}
+.theme-btn:hover {
+  border-color: var(--accent);
+}
