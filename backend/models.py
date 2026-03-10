@@ -80,3 +80,26 @@ class UserProfile(BaseModel):
     emotion_count: int
     likes_count: int
     emotions: list[EmotionOut]
+    followers_count: int = 0
+    following_count: int = 0
+    is_following: bool = False
+
+
+class NotificationOut(BaseModel):
+    id: int
+    type: str
+    from_username: Optional[str] = None
+    emotion_id: Optional[int] = None
+    read: bool
+    created_at: datetime
+
+
+class CommentIn(BaseModel):
+    text: str = Field(..., min_length=1, max_length=280)
+
+
+class CommentOut(BaseModel):
+    id: int
+    username: str
+    text: str
+    created_at: datetime

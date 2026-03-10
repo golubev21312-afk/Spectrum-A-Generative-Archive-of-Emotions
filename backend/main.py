@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from database import get_pool, init_db, close_db
-from models import EmotionIn, EmotionOut, EmotionFeed, UserRegister, UserOut, UserProfile
+from models import EmotionIn, EmotionOut, EmotionFeed, UserRegister, UserOut, UserProfile, NotificationOut, CommentIn, CommentOut
 
 JWT_SECRET = os.getenv("JWT_SECRET", "spectrum-secret-change-me")
 JWT_ALGORITHM = "HS256"
@@ -166,6 +166,7 @@ async def get_emotions(
     emotion_type: Optional[str] = Query(None),
     sort: str = Query("new", pattern="^(new|popular)$"),
     author: Optional[str] = Query(None),
+    following: bool = Query(False),
     user: dict | None = Depends(get_current_user),
 ):
     pool = await get_pool()
@@ -182,6 +183,10 @@ async def get_emotions(
     if author:
         conditions.append(f"e.username ILIKE ${i}")
         args.append(f"%{author}%")
+        i += 1
+    if following and user:
+        conditions.append(f"e.user_id IN (SELECT following_id FROM follows WHERE follower_id = ${i})")
+        args.append(user["user_id"])
         i += 1
 
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
@@ -264,6 +269,14 @@ async def like_emotion(emotion_id: int, user: dict = Depends(get_current_user)):
             )
         except Exception:
             pass  # already liked
+        # Create notification for the emotion owner (skip if liking own emotion)
+        owner = await conn.fetchrow("SELECT user_id FROM emotions WHERE id=$1", emotion_id)
+        if owner and owner["user_id"] != user["user_id"]:
+            await conn.execute(
+                """INSERT INTO notifications (user_id, type, from_username, emotion_id)
+                   VALUES ($1, 'like', $2, $3)""",
+                owner["user_id"], user["username"], emotion_id
+            )
     return {"ok": True}
 
 
@@ -318,10 +331,172 @@ async def get_user_profile(username: str, user: dict | None = Depends(get_curren
             )
             liked_ids = {r["emotion_id"] for r in liked_rows}
 
+        followers_count_row = await conn.fetchrow(
+            "SELECT COUNT(*) FROM follows WHERE following_id=$1", user_row["id"]
+        )
+        following_count_row = await conn.fetchrow(
+            "SELECT COUNT(*) FROM follows WHERE follower_id=$1", user_row["id"]
+        )
+        is_following = False
+        if user:
+            follow_row = await conn.fetchrow(
+                "SELECT 1 FROM follows WHERE follower_id=$1 AND following_id=$2",
+                user["user_id"], user_row["id"]
+            )
+            is_following = follow_row is not None
+
     return UserProfile(
         username=user_row["username"],
         created_at=user_row["created_at"],
         emotion_count=len(emotion_rows),
         likes_count=likes_count_row["count"],
         emotions=[_build_emotion(r, liked_ids) for r in emotion_rows],
+        followers_count=followers_count_row["count"],
+        following_count=following_count_row["count"],
+        is_following=is_following,
+    )
+
+
+@app.get("/notifications", response_model=list[NotificationOut])
+async def get_notifications(user: dict = Depends(get_current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """SELECT id, type, from_username, emotion_id, read, created_at
+               FROM notifications WHERE user_id=$1
+               ORDER BY created_at DESC LIMIT 50""",
+            user["user_id"]
+        )
+    return [NotificationOut(**dict(r)) for r in rows]
+
+
+@app.post("/notifications/read", status_code=200)
+async def mark_notifications_read(user: dict = Depends(get_current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE notifications SET read=TRUE WHERE user_id=$1 AND read=FALSE",
+            user["user_id"]
+        )
+    return {"ok": True}
+
+
+@app.get("/emotions/{emotion_id}/comments", response_model=list[CommentOut])
+async def get_comments(emotion_id: int):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """SELECT id, username, text, created_at FROM comments
+               WHERE emotion_id=$1 ORDER BY created_at ASC""",
+            emotion_id
+        )
+    return [CommentOut(**dict(r)) for r in rows]
+
+
+@app.post("/emotions/{emotion_id}/comments", response_model=CommentOut, status_code=201)
+async def add_comment(emotion_id: int, data: CommentIn, user: dict = Depends(get_current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        exists = await conn.fetchrow("SELECT id FROM emotions WHERE id=$1", emotion_id)
+        if not exists:
+            raise HTTPException(status_code=404, detail="Emotion not found")
+        row = await conn.fetchrow(
+            """INSERT INTO comments (emotion_id, user_id, username, text)
+               VALUES ($1, $2, $3, $4) RETURNING id, username, text, created_at""",
+            emotion_id, user["user_id"], user["username"], data.text
+        )
+        # Notify emotion owner
+        owner = await conn.fetchrow("SELECT user_id FROM emotions WHERE id=$1", emotion_id)
+        if owner and owner["user_id"] != user["user_id"]:
+            await conn.execute(
+                """INSERT INTO notifications (user_id, type, from_username, emotion_id)
+                   VALUES ($1, 'comment', $2, $3)""",
+                owner["user_id"], user["username"], emotion_id
+            )
+    return CommentOut(**dict(row))
+
+
+@app.post("/users/{username}/follow", status_code=201)
+async def follow_user(username: str, user: dict = Depends(get_current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    if username == user["username"]:
+        raise HTTPException(status_code=400, detail="Cannot follow yourself")
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        target = await conn.fetchrow("SELECT id FROM users WHERE username=$1", username)
+        if not target:
+            raise HTTPException(status_code=404, detail="User not found")
+        try:
+            await conn.execute(
+                "INSERT INTO follows (follower_id, following_id) VALUES ($1, $2)",
+                user["user_id"], target["id"]
+            )
+        except Exception:
+            pass  # already following
+    return {"ok": True}
+
+
+@app.delete("/users/{username}/follow", status_code=200)
+async def unfollow_user(username: str, user: dict = Depends(get_current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        target = await conn.fetchrow("SELECT id FROM users WHERE username=$1", username)
+        if target:
+            await conn.execute(
+                "DELETE FROM follows WHERE follower_id=$1 AND following_id=$2",
+                user["user_id"], target["id"]
+            )
+    return {"ok": True}
+
+
+@app.get("/users/{username}/liked", response_model=EmotionFeed)
+async def get_liked_emotions(
+    username: str,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    user: dict | None = Depends(get_current_user),
+):
+    pool = await get_pool()
+    offset = (page - 1) * limit
+    async with pool.acquire() as conn:
+        target = await conn.fetchrow("SELECT id FROM users WHERE username=$1", username)
+        if not target:
+            raise HTTPException(status_code=404, detail="User not found")
+        total_row = await conn.fetchrow(
+            "SELECT COUNT(*) FROM likes WHERE user_id=$1", target["id"]
+        )
+        rows = await conn.fetch(
+            f"""SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type, e.thumbnail,
+                       COUNT(l2.user_id) AS likes_count
+                FROM likes l1
+                JOIN emotions e ON e.id = l1.emotion_id
+                LEFT JOIN likes l2 ON l2.emotion_id = e.id
+                WHERE l1.user_id = $1
+                GROUP BY e.id
+                ORDER BY l1.created_at DESC
+                LIMIT $2 OFFSET $3""",
+            target["id"], limit, offset
+        )
+        liked_ids: set[int] = set()
+        if user and rows:
+            ids = [r["id"] for r in rows]
+            liked_rows = await conn.fetch(
+                "SELECT emotion_id FROM likes WHERE user_id=$1 AND emotion_id = ANY($2::int[])",
+                user["user_id"], ids
+            )
+            liked_ids = {r["emotion_id"] for r in liked_rows}
+    return EmotionFeed(
+        items=[_build_emotion(r, liked_ids) for r in rows],
+        total=total_row["count"],
+        page=page,
+        limit=limit,
     )
