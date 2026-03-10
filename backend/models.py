@@ -55,6 +55,7 @@ class EmotionOut(BaseModel):
     likes_count: int = 0
     liked_by_me: bool = False
     thumbnail: Optional[str] = None
+    views: int = 0
 
 
 class EmotionFeed(BaseModel):

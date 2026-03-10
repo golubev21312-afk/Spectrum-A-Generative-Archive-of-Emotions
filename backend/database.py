@@ -105,6 +105,15 @@ async def init_db() -> None:
         await conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_follows_following_id ON follows(following_id);
         """)
+        await conn.execute("""
+            ALTER TABLE emotions ADD COLUMN IF NOT EXISTS views INTEGER DEFAULT 0;
+        """)
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_emotions_search ON emotions
+            USING GIN (to_tsvector('simple',
+                COALESCE(emotion_type, '') || ' ' || COALESCE(username, '')
+            ));
+        """)
 
 
 async def close_db() -> None:

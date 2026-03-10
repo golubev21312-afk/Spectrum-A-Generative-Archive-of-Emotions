@@ -83,6 +83,7 @@ def _build_emotion(row, liked_ids: set[int] = set()) -> EmotionOut:
         likes_count=row["likes_count"],
         liked_by_me=row["id"] in liked_ids,
         thumbnail=row["thumbnail"],
+        views=row["views"] if "views" in row.keys() else 0,
     )
 
 
@@ -140,7 +141,7 @@ async def get_random_emotion(user: dict | None = Depends(get_current_user)):
     liked_ids: set[int] = set()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            """SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type, e.thumbnail,
+            """SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type, e.thumbnail, e.views,
                       COUNT(l.user_id) AS likes_count
                FROM emotions e
                LEFT JOIN likes l ON l.emotion_id = e.id
@@ -166,6 +167,7 @@ async def get_emotions(
     emotion_type: Optional[str] = Query(None),
     sort: str = Query("new", pattern="^(new|popular)$"),
     author: Optional[str] = Query(None),
+    q: Optional[str] = Query(None),
     following: bool = Query(False),
     user: dict | None = Depends(get_current_user),
 ):
@@ -184,6 +186,13 @@ async def get_emotions(
         conditions.append(f"e.username ILIKE ${i}")
         args.append(f"%{author}%")
         i += 1
+    if q:
+        conditions.append(
+            f"to_tsvector('simple', COALESCE(e.emotion_type,'') || ' ' || COALESCE(e.username,'')) "
+            f"@@ plainto_tsquery('simple', ${i})"
+        )
+        args.append(q)
+        i += 1
     if following and user:
         conditions.append(f"e.user_id IN (SELECT following_id FROM follows WHERE follower_id = ${i})")
         args.append(user["user_id"])
@@ -199,7 +208,7 @@ async def get_emotions(
         total = total_row["count"]
 
         rows = await conn.fetch(
-            f"""SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type, e.thumbnail,
+            f"""SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type, e.thumbnail, e.views,
                        COUNT(l.user_id) AS likes_count
                 FROM emotions e
                 LEFT JOIN likes l ON l.emotion_id = e.id
@@ -232,8 +241,11 @@ async def get_emotion(emotion_id: int, user: dict | None = Depends(get_current_u
     pool = await get_pool()
     liked_ids: set[int] = set()
     async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE emotions SET views = views + 1 WHERE id = $1", emotion_id
+        )
         row = await conn.fetchrow(
-            """SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type, e.thumbnail,
+            """SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type, e.thumbnail, e.views,
                       COUNT(l.user_id) AS likes_count
                FROM emotions e
                LEFT JOIN likes l ON l.emotion_id = e.id
@@ -304,7 +316,7 @@ async def get_user_profile(username: str, user: dict | None = Depends(get_curren
             raise HTTPException(status_code=404, detail="User not found")
 
         emotion_rows = await conn.fetch(
-            """SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type, e.thumbnail,
+            """SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type, e.thumbnail, e.views,
                       COUNT(l.user_id) AS likes_count
                FROM emotions e
                LEFT JOIN likes l ON l.emotion_id = e.id
@@ -355,6 +367,21 @@ async def get_user_profile(username: str, user: dict | None = Depends(get_curren
         following_count=following_count_row["count"],
         is_following=is_following,
     )
+
+
+@app.delete("/emotions/{emotion_id}", status_code=200)
+async def delete_emotion(emotion_id: int, user: dict = Depends(get_current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT user_id FROM emotions WHERE id=$1", emotion_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Emotion not found")
+        if row["user_id"] != user["user_id"]:
+            raise HTTPException(status_code=403, detail="Not your emotion")
+        await conn.execute("DELETE FROM emotions WHERE id=$1", emotion_id)
+    return {"ok": True}
 
 
 @app.get("/notifications", response_model=list[NotificationOut])
@@ -475,7 +502,7 @@ async def get_liked_emotions(
             "SELECT COUNT(*) FROM likes WHERE user_id=$1", target["id"]
         )
         rows = await conn.fetch(
-            f"""SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type, e.thumbnail,
+            f"""SELECT e.id, e.parameters, e.created_at, e.username, e.emotion_type, e.thumbnail, e.views,
                        COUNT(l2.user_id) AS likes_count
                 FROM likes l1
                 JOIN emotions e ON e.id = l1.emotion_id
