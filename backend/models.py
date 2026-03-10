@@ -75,6 +75,14 @@ class UserOut(BaseModel):
     username: str
 
 
+class BioUpdate(BaseModel):
+    bio: str = Field("", max_length=160)
+
+
+class EmotionTypeUpdate(BaseModel):
+    emotion_type: str
+
+
 class UserProfile(BaseModel):
     username: str
     created_at: datetime
@@ -84,6 +92,7 @@ class UserProfile(BaseModel):
     followers_count: int = 0
     following_count: int = 0
     is_following: bool = False
+    bio: Optional[str] = None
 
 
 class NotificationOut(BaseModel):

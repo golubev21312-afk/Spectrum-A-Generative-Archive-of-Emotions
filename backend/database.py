@@ -114,6 +114,9 @@ async def init_db() -> None:
                 COALESCE(emotion_type, '') || ' ' || COALESCE(username, '')
             ));
         """)
+        await conn.execute("""
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR(160);
+        """)
 
 
 async def close_db() -> None:

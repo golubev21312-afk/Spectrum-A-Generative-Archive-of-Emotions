@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from database import get_pool, init_db, close_db
-from models import EmotionIn, EmotionOut, EmotionFeed, UserRegister, UserOut, UserProfile, NotificationOut, CommentIn, CommentOut
+from models import EmotionIn, EmotionOut, EmotionFeed, UserRegister, UserOut, UserProfile, NotificationOut, CommentIn, CommentOut, BioUpdate, EmotionTypeUpdate
 
 JWT_SECRET = os.getenv("JWT_SECRET", "spectrum-secret-change-me")
 JWT_ALGORITHM = "HS256"
@@ -165,10 +165,11 @@ async def get_emotions(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     emotion_type: Optional[str] = Query(None),
-    sort: str = Query("new", pattern="^(new|popular)$"),
+    sort: str = Query("new", pattern="^(new|popular|trending)$"),
     author: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
     following: bool = Query(False),
+    period: Optional[str] = Query(None),
     user: dict | None = Depends(get_current_user),
 ):
     pool = await get_pool()
@@ -197,9 +198,16 @@ async def get_emotions(
         conditions.append(f"e.user_id IN (SELECT following_id FROM follows WHERE follower_id = ${i})")
         args.append(user["user_id"])
         i += 1
+    if period == "today":
+        conditions.append("e.created_at > NOW() - INTERVAL '24 hours'")
 
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
-    order = "COUNT(l.user_id) DESC, e.created_at DESC" if sort == "popular" else "e.created_at DESC"
+    if sort == "popular":
+        order = "COUNT(l.user_id) DESC, e.created_at DESC"
+    elif sort == "trending":
+        order = "(COUNT(l.user_id)::float / POWER(EXTRACT(EPOCH FROM (NOW() - e.created_at))/3600.0 + 2, 1.5)) DESC"
+    else:
+        order = "e.created_at DESC"
 
     async with pool.acquire() as conn:
         total_row = await conn.fetchrow(
@@ -310,7 +318,7 @@ async def get_user_profile(username: str, user: dict | None = Depends(get_curren
     pool = await get_pool()
     async with pool.acquire() as conn:
         user_row = await conn.fetchrow(
-            "SELECT id, username, created_at FROM users WHERE username = $1", username
+            "SELECT id, username, created_at, bio FROM users WHERE username = $1", username
         )
         if user_row is None:
             raise HTTPException(status_code=404, detail="User not found")
@@ -366,7 +374,37 @@ async def get_user_profile(username: str, user: dict | None = Depends(get_curren
         followers_count=followers_count_row["count"],
         following_count=following_count_row["count"],
         is_following=is_following,
+        bio=user_row["bio"],
     )
+
+
+@app.patch("/emotions/{emotion_id}/type", status_code=200)
+async def update_emotion_type(emotion_id: int, data: EmotionTypeUpdate, user: dict = Depends(get_current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    if data.emotion_type not in __import__("models").ALLOWED_EMOTION_TYPES:
+        raise HTTPException(status_code=400, detail="Unknown emotion type")
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT user_id FROM emotions WHERE id=$1", emotion_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Emotion not found")
+        if row["user_id"] != user["user_id"]:
+            raise HTTPException(status_code=403, detail="Not your emotion")
+        await conn.execute("UPDATE emotions SET emotion_type=$1 WHERE id=$2", data.emotion_type, emotion_id)
+    return {"ok": True}
+
+
+@app.patch("/users/{username}/bio", status_code=200)
+async def update_bio(username: str, data: BioUpdate, user: dict = Depends(get_current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    if user["username"] != username:
+        raise HTTPException(status_code=403, detail="Cannot edit another user's bio")
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("UPDATE users SET bio=$1 WHERE username=$2", data.bio or None, username)
+    return {"ok": True}
 
 
 @app.delete("/emotions/{emotion_id}", status_code=200)
