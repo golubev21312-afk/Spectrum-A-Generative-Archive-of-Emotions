@@ -1684,33 +1684,281 @@ canvas.feed-card-avatar {
 
 /* ── 7.4 Light theme ────────────────────────────────────────── */
 [data-theme="light"] {
-  --bg: #f0f0f5;
+  --bg: #eeeef4;
   --accent: #007a55;
-  --panel-bg: rgba(240, 240, 248, 0.88);
+  --panel-bg: rgba(255, 255, 255, 0.82);
   --text: #1a1a2e;
 }
-[data-theme="light"] html,
-[data-theme="light"] body,
 html[data-theme="light"],
 html[data-theme="light"] body {
   background: var(--bg);
   color: var(--text);
 }
-[data-theme="light"] .nav,
+html[data-theme="light"] #app {
+  background: var(--bg);
+}
+
+/* Nav */
 html[data-theme="light"] .nav {
-  background: rgba(230, 230, 240, 0.92);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
 }
-[data-theme="light"] .feed-card,
+html[data-theme="light"] .nav a {
+  border-color: rgba(0, 0, 0, 0.12);
+  color: rgba(26, 26, 46, 0.75);
+}
+html[data-theme="light"] .nav a:hover,
+html[data-theme="light"] .nav a.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+html[data-theme="light"] .lang-btn,
+html[data-theme="light"] .theme-btn {
+  border-color: rgba(0, 0, 0, 0.12);
+  color: rgba(26, 26, 46, 0.7);
+  background: rgba(255,255,255,0.6);
+}
+html[data-theme="light"] .lang-btn:hover,
+html[data-theme="light"] .theme-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+html[data-theme="light"] .nav-user {
+  color: var(--accent);
+}
+html[data-theme="light"] .nav-bell {
+  color: rgba(26, 26, 46, 0.6);
+}
+
+/* Page hint */
+html[data-theme="light"] .page-hint {
+  color: rgba(26, 26, 46, 0.35);
+}
+
+/* Controls panel */
+html[data-theme="light"] .controls {
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+}
+html[data-theme="light"] .controls h2 {
+  color: var(--accent);
+}
+html[data-theme="light"] .slider-group label {
+  color: rgba(26, 26, 46, 0.6);
+}
+html[data-theme="light"] input[type="range"] {
+  background: rgba(0, 0, 0, 0.12);
+}
+html[data-theme="light"] .emotion-label {
+  color: var(--accent);
+  border-color: rgba(0, 122, 85, 0.25);
+  background: rgba(0, 122, 85, 0.06);
+}
+
+/* Auth form */
+html[data-theme="light"] .auth-container {
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+}
+html[data-theme="light"] .auth-title {
+  color: var(--accent);
+}
+html[data-theme="light"] .auth-input {
+  border-color: rgba(0, 0, 0, 0.18);
+  background: rgba(255, 255, 255, 0.9);
+  color: #1a1a2e;
+}
+html[data-theme="light"] .auth-input:focus {
+  border-color: var(--accent);
+  background: #fff;
+}
+html[data-theme="light"] .auth-input::placeholder {
+  color: rgba(26, 26, 46, 0.38);
+}
+html[data-theme="light"] .auth-register-btn {
+  border-color: rgba(0, 0, 0, 0.15);
+  color: rgba(26, 26, 46, 0.65);
+  background: transparent;
+}
+html[data-theme="light"] .auth-register-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Action buttons */
+html[data-theme="light"] .action-btn {
+  border-color: rgba(0, 122, 85, 0.45);
+  color: var(--accent);
+  background: rgba(0, 122, 85, 0.05);
+}
+html[data-theme="light"] .action-btn:hover {
+  background: rgba(0, 122, 85, 0.1);
+  box-shadow: 0 0 20px rgba(0, 122, 85, 0.12);
+}
+
+/* Feed */
 html[data-theme="light"] .feed-card {
-  background: rgba(255, 255, 255, 0.7);
-  border-color: rgba(0,0,0,0.1);
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
 }
-[data-theme="light"] .feed-card-emotion,
+html[data-theme="light"] .feed-card:hover {
+  box-shadow: 0 8px 28px rgba(0,0,0,0.1);
+  border-color: rgba(0, 122, 85, 0.2);
+}
 html[data-theme="light"] .feed-card-emotion {
   color: var(--accent);
 }
-html[data-theme="light"] #app {
-  background: var(--bg);
+html[data-theme="light"] .feed-card-meta {
+  color: rgba(26, 26, 46, 0.45);
+}
+html[data-theme="light"] .feed-card-author {
+  color: rgba(26, 26, 46, 0.55);
+}
+html[data-theme="light"] .feed-card-author:hover {
+  color: var(--accent);
+}
+html[data-theme="light"] .feed-like-btn {
+  color: rgba(26, 26, 46, 0.35);
+}
+html[data-theme="light"] .like-count {
+  color: rgba(26, 26, 46, 0.4);
+}
+html[data-theme="light"] .feed-sort-btn {
+  border-color: rgba(0, 0, 0, 0.12);
+  color: rgba(26, 26, 46, 0.6);
+  background: rgba(255,255,255,0.7);
+}
+html[data-theme="light"] .feed-sort-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0, 122, 85, 0.06);
+}
+html[data-theme="light"] .feed-type-select,
+html[data-theme="light"] .feed-author-input,
+html[data-theme="light"] .feed-search-input {
+  border-color: rgba(0, 0, 0, 0.15);
+  background: rgba(255,255,255,0.85);
+  color: #1a1a2e;
+}
+html[data-theme="light"] .feed-type-select:focus,
+html[data-theme="light"] .feed-author-input:focus,
+html[data-theme="light"] .feed-search-input:focus {
+  border-color: var(--accent);
+}
+html[data-theme="light"] .feed-hint {
+  color: rgba(26, 26, 46, 0.35);
+}
+html[data-theme="light"] .feed-empty-glyph {
+  color: rgba(0, 122, 85, 0.25);
+}
+html[data-theme="light"] .feed-empty-title {
+  color: rgba(26, 26, 46, 0.5);
+}
+html[data-theme="light"] .feed-empty-sub {
+  color: rgba(26, 26, 46, 0.3);
+}
+
+/* Today's top */
+html[data-theme="light"] .feed-today-title {
+  color: rgba(26, 26, 46, 0.45);
+}
+html[data-theme="light"] .today-card {
+  background: rgba(255,255,255,0.7);
+  border-color: rgba(0,0,0,0.08);
+}
+html[data-theme="light"] .today-card-title {
+  color: rgba(26, 26, 46, 0.85);
+}
+html[data-theme="light"] .today-card-meta {
+  color: rgba(26, 26, 46, 0.45);
+}
+
+/* Viewer overlay – always on top of dark 3D canvas, keep text light */
+html[data-theme="light"] .viewer-overlay {
+  text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+}
+html[data-theme="light"] .feed-back-btn {
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+html[data-theme="light"] .feed-back-btn:hover {
+  color: var(--accent);
+}
+
+/* Notifications */
+html[data-theme="light"] .notif-item {
+  border-color: rgba(0,0,0,0.07);
+  background: rgba(255,255,255,0.7);
+}
+html[data-theme="light"] .notif-item.unread {
+  background: rgba(0, 122, 85, 0.05);
+  border-color: rgba(0, 122, 85, 0.15);
+}
+html[data-theme="light"] .notif-text {
+  color: rgba(26, 26, 46, 0.7);
+}
+html[data-theme="light"] .notif-time {
+  color: rgba(26, 26, 46, 0.38);
+}
+
+/* Profile */
+html[data-theme="light"] .profile-stat-value {
+  color: #1a1a2e;
+}
+html[data-theme="light"] .profile-stat-label {
+  color: rgba(26, 26, 46, 0.45);
+}
+html[data-theme="light"] .profile-bio {
+  color: rgba(26, 26, 46, 0.65);
+}
+html[data-theme="light"] .profile-bio-input {
+  border-color: rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.9);
+  color: #1a1a2e;
+}
+html[data-theme="light"] .profile-tab {
+  border-color: rgba(0,0,0,0.12);
+  color: rgba(26, 26, 46, 0.6);
+}
+html[data-theme="light"] .profile-tab.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Comments */
+html[data-theme="light"] .comments-input {
+  border-color: rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.85);
+  color: #1a1a2e;
+}
+html[data-theme="light"] .comments-input::placeholder {
+  color: rgba(26, 26, 46, 0.35);
+}
+html[data-theme="light"] .comment-author {
+  color: rgba(26, 26, 46, 0.7);
+}
+html[data-theme="light"] .comment-text {
+  color: rgba(26, 26, 46, 0.75);
+}
+html[data-theme="light"] .comment-time {
+  color: rgba(26, 26, 46, 0.35);
+}
+html[data-theme="light"] .comment-item {
+  border-color: rgba(0,0,0,0.06);
+}
+
+/* Skeleton */
+html[data-theme="light"] .feed-card-skeleton {
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.06);
+}
+html[data-theme="light"] .skeleton-preview {
+  background: rgba(0,0,0,0.07);
+}
+html[data-theme="light"] .skeleton-line {
+  background: rgba(0,0,0,0.08);
 }
 
 .theme-btn {
@@ -1721,8 +1969,9 @@ html[data-theme="light"] #app {
   cursor: pointer;
   font-size: 15px;
   padding: 4px 10px;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, color 0.2s;
 }
 .theme-btn:hover {
   border-color: var(--accent);
+  color: var(--accent);
 }
