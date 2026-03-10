@@ -32,6 +32,7 @@ export interface UserProfile {
   following_count: number;
   is_following: boolean;
   emotions: EmotionResponse[];
+  bio?: string;
 }
 
 export interface NotificationResponse {
@@ -134,14 +135,33 @@ export async function deleteEmotion(id: number): Promise<void> {
   if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
 }
 
+export async function updateBio(username: string, bio: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/users/${username}/bio`, {
+    method: "PATCH",
+    headers: authHeaders(),
+    body: JSON.stringify({ bio }),
+  });
+  if (!res.ok) throw new Error(`Bio update failed: ${res.status}`);
+}
+
+export async function updateEmotionType(id: number, emotion_type: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/emotions/${id}/type`, {
+    method: "PATCH",
+    headers: authHeaders(),
+    body: JSON.stringify({ emotion_type }),
+  });
+  if (!res.ok) throw new Error(`Update type failed: ${res.status}`);
+}
+
 export async function getFeed(params: {
   page?: number;
   limit?: number;
   emotion_type?: string;
-  sort?: "new" | "popular";
+  sort?: "new" | "popular" | "trending";
   author?: string;
   q?: string;
   following?: boolean;
+  period?: "today";
 }): Promise<EmotionFeed> {
   const q = new URLSearchParams();
   if (params.page) q.set("page", String(params.page));
@@ -151,6 +171,7 @@ export async function getFeed(params: {
   if (params.author) q.set("author", params.author);
   if (params.q) q.set("q", params.q);
   if (params.following) q.set("following", "true");
+  if (params.period) q.set("period", params.period);
   const res = await fetch(`${API_BASE}/emotions?${q}`, {
     headers: authHeaders(),
   });

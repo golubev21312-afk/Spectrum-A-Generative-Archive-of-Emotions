@@ -85,6 +85,12 @@ const texts = {
   confirmDelete: { ru: "Удалить эту эмоцию?", en: "Delete this emotion?" },
   search: { ru: "Поиск...", en: "Search..." },
   sortTrending: { ru: "Трендовые", en: "Trending" },
+  todayTop: { ru: "Сегодня в топе", en: "Today's top" },
+  bio: { ru: "О себе", en: "Bio" },
+  bioPlaceholder: { ru: "Расскажите о себе (до 160 символов)", en: "Tell about yourself (up to 160 chars)" },
+  saveBio: { ru: "Сохранить", en: "Save" },
+  exportJson: { ru: "Экспорт JSON", en: "Export JSON" },
+  editType: { ru: "Изменить тип", en: "Edit type" },
 } as const;
 
 interface EmotionRule {

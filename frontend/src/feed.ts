@@ -1,4 +1,5 @@
-import { getFeed, likeEmotion, unlikeEmotion, isLoggedIn, EmotionResponse } from "./api";
+import { getFeed, isLoggedIn } from "./api";
+import { createCard } from "./card";
 import { t, getLang } from "./i18n";
 
 function emptyState(): HTMLElement {
@@ -28,109 +29,6 @@ function emotionTypes() {
   return getLang() === "ru" ? EMOTION_TYPES_RU : EMOTION_TYPES_EN;
 }
 
-// Generates a CSS gradient based on hue parameter
-function emotionPreviewStyle(params: Record<string, number>): string {
-  const h = params.hue ?? 160;
-  const t2 = params.transparency ?? 0.3;
-  const l1 = Math.round(15 + (1 - t2) * 20);
-  const l2 = Math.round(30 + (1 - t2) * 25);
-  return `background: linear-gradient(135deg,
-    hsl(${h},70%,${l1}%) 0%,
-    hsl(${(h + 40) % 360},80%,${l2}%) 50%,
-    hsl(${(h + 80) % 360},60%,${l1}%) 100%);`;
-}
-
-function createCard(emotion: EmotionResponse, onLikeToggle: (id: number, liked: boolean) => void): HTMLElement {
-  const card = document.createElement("div");
-  card.className = "feed-card";
-  card.setAttribute("data-id", String(emotion.id));
-
-  // Preview — WebGL thumbnail if available, else CSS gradient fallback
-  let preview: HTMLElement;
-  if (emotion.thumbnail) {
-    const img = document.createElement("img");
-    img.className = "feed-card-preview feed-card-preview-img";
-    img.src = emotion.thumbnail;
-    img.loading = "lazy";
-    img.alt = emotion.emotion_type || "";
-    preview = img;
-  } else {
-    preview = document.createElement("div");
-    preview.className = "feed-card-preview";
-    preview.setAttribute("style", emotionPreviewStyle(emotion.parameters));
-  }
-  preview.addEventListener("click", () => {
-    location.hash = `#/emotion/${emotion.id}`;
-  });
-
-  // Info
-  const info = document.createElement("div");
-  info.className = "feed-card-info";
-
-  const emotionLabel = document.createElement("div");
-  emotionLabel.className = "feed-card-emotion";
-  emotionLabel.textContent = emotion.emotion_type || "—";
-
-  const meta = document.createElement("div");
-  meta.className = "feed-card-meta";
-  const author = emotion.username
-    ? `<a href="#/profile/${emotion.username}" class="feed-card-author">${emotion.username}</a>`
-    : `<span class="feed-card-author">${t("anonymous")}</span>`;
-  const date = new Date(emotion.created_at).toLocaleDateString();
-  meta.innerHTML = `${author} · ${date}`;
-
-  // Likes
-  const likeRow = document.createElement("div");
-  likeRow.className = "feed-card-like-row";
-
-  const likeBtn = document.createElement("button");
-  likeBtn.className = `feed-like-btn${emotion.liked_by_me ? " liked" : ""}`;
-  likeBtn.innerHTML = `<span class="like-icon">${emotion.liked_by_me ? "♥" : "♡"}</span>`;
-
-  const likeCount = document.createElement("span");
-  likeCount.className = "like-count";
-  likeCount.textContent = String(emotion.likes_count);
-
-  let liked = emotion.liked_by_me;
-  let count = emotion.likes_count;
-
-  likeBtn.addEventListener("click", async (e) => {
-    e.stopPropagation();
-    if (!isLoggedIn()) {
-      likeBtn.title = t("loginToLike");
-      likeBtn.classList.add("shake");
-      setTimeout(() => likeBtn.classList.remove("shake"), 400);
-      return;
-    }
-    liked = !liked;
-    count += liked ? 1 : -1;
-    likeBtn.innerHTML = `<span class="like-icon">${liked ? "♥" : "♡"}</span>`;
-    likeCount.textContent = String(count);
-    likeBtn.classList.toggle("liked", liked);
-    try {
-      liked ? await likeEmotion(emotion.id) : await unlikeEmotion(emotion.id);
-      onLikeToggle(emotion.id, liked);
-    } catch {
-      // revert on error
-      liked = !liked;
-      count += liked ? 1 : -1;
-      likeBtn.innerHTML = `<span class="like-icon">${liked ? "♥" : "♡"}</span>`;
-      likeCount.textContent = String(count);
-      likeBtn.classList.toggle("liked", liked);
-    }
-  });
-
-  likeRow.appendChild(likeBtn);
-  likeRow.appendChild(likeCount);
-
-  info.appendChild(emotionLabel);
-  info.appendChild(meta);
-  info.appendChild(likeRow);
-  card.appendChild(preview);
-  card.appendChild(info);
-  return card;
-}
-
 // Persist scroll position across navigations
 let savedScrollTop = 0;
 
@@ -143,11 +41,43 @@ export function mountFeed(app: HTMLElement) {
   const wrap = document.createElement("div");
   wrap.className = "feed-wrap";
 
-  // Filters
+  // ── Today's top strip ──────────────────────────────────────
+  const todaySection = document.createElement("div");
+  todaySection.className = "feed-today";
+
+  const todayTitle = document.createElement("div");
+  todayTitle.className = "feed-today-title";
+  todayTitle.textContent = t("todayTop");
+
+  const todayRow = document.createElement("div");
+  todayRow.className = "feed-today-row";
+
+  todaySection.appendChild(todayTitle);
+  todaySection.appendChild(todayRow);
+
+  getFeed({ sort: "trending", limit: 5, period: "today" }).then(data => {
+    if (data.items.length === 0) {
+      todaySection.style.display = "none";
+      return;
+    }
+    data.items.forEach(emotion => {
+      const chip = document.createElement("a");
+      chip.className = "feed-today-chip";
+      chip.href = `#/emotion/${emotion.id}`;
+      const h = emotion.parameters.hue ?? 160;
+      chip.style.cssText = `background: linear-gradient(135deg, hsl(${h},60%,18%) 0%, hsl(${(h+50)%360},70%,24%) 100%); border-color: hsl(${h},60%,30%)`;
+      chip.innerHTML = `
+        <span class="feed-today-type">${emotion.emotion_type || "—"}</span>
+        <span class="feed-today-meta">${emotion.likes_count} ♥</span>
+      `;
+      todayRow.appendChild(chip);
+    });
+  }).catch(() => { todaySection.style.display = "none"; });
+
+  // ── Filters ────────────────────────────────────────────────
   const filters = document.createElement("div");
   filters.className = "feed-filters";
 
-  // Sort buttons
   const sortWrap = document.createElement("div");
   sortWrap.className = "feed-sort";
 
@@ -159,6 +89,10 @@ export function mountFeed(app: HTMLElement) {
   sortPop.className = "feed-sort-btn";
   sortPop.textContent = t("sortPopular");
 
+  const sortTrending = document.createElement("button");
+  sortTrending.className = "feed-sort-btn";
+  sortTrending.textContent = t("sortTrending");
+
   const sortFollowing = document.createElement("button");
   sortFollowing.className = "feed-sort-btn";
   sortFollowing.textContent = t("followingFeed");
@@ -166,9 +100,9 @@ export function mountFeed(app: HTMLElement) {
 
   sortWrap.appendChild(sortNew);
   sortWrap.appendChild(sortPop);
+  sortWrap.appendChild(sortTrending);
   sortWrap.appendChild(sortFollowing);
 
-  // Emotion type filter
   const typeSelect = document.createElement("select");
   typeSelect.className = "feed-type-select";
   const allOpt = document.createElement("option");
@@ -182,7 +116,6 @@ export function mountFeed(app: HTMLElement) {
     typeSelect.appendChild(opt);
   });
 
-  // Search (emotion type or author)
   const searchInput = document.createElement("input");
   searchInput.type = "text";
   searchInput.className = "feed-author-input auth-input";
@@ -192,26 +125,27 @@ export function mountFeed(app: HTMLElement) {
   filters.appendChild(typeSelect);
   filters.appendChild(searchInput);
 
-  // Grid
+  // ── Grid ───────────────────────────────────────────────────
   const grid = document.createElement("div");
   grid.className = "feed-grid";
 
-  // Infinite scroll sentinel
   const sentinel = document.createElement("div");
   sentinel.className = "feed-sentinel";
 
+  wrap.appendChild(todaySection);
   wrap.appendChild(filters);
   wrap.appendChild(grid);
   wrap.appendChild(sentinel);
   app.appendChild(wrap);
 
   let currentPage = 1;
-  let currentSort: "new" | "popular" = "new";
+  let currentSort: "new" | "popular" | "trending" = "new";
   let currentType = "";
   let currentQ = "";
   let currentFollowing = false;
   let totalItems = 0;
   let loading = false;
+  let cardIndex = 0;
 
   function showSkeletons(count = 8) {
     for (let i = 0; i < count; i++) {
@@ -232,6 +166,7 @@ export function mountFeed(app: HTMLElement) {
     loading = true;
     if (reset) {
       currentPage = 1;
+      cardIndex = 0;
       grid.innerHTML = "";
       showSkeletons();
     }
@@ -247,14 +182,13 @@ export function mountFeed(app: HTMLElement) {
       });
       totalItems = data.total;
 
-      // Remove skeleton placeholders before inserting real cards
       grid.querySelectorAll(".feed-card-skeleton").forEach(el => el.remove());
 
       if (data.items.length === 0 && currentPage === 1) {
         grid.appendChild(emptyState());
       } else {
         data.items.forEach(emotion => {
-          grid.appendChild(createCard(emotion, () => {}));
+          grid.appendChild(createCard(emotion, () => {}, cardIndex++));
         });
       }
 
@@ -262,40 +196,28 @@ export function mountFeed(app: HTMLElement) {
       sentinel.style.display = shown < totalItems ? "block" : "none";
     } catch {
       grid.querySelectorAll(".feed-card-skeleton").forEach(el => el.remove());
-      if (currentPage === 1) {
-        grid.appendChild(emptyState());
-      }
+      if (currentPage === 1) grid.appendChild(emptyState());
       sentinel.style.display = "none";
     } finally {
       loading = false;
     }
   }
 
-  sortNew.addEventListener("click", () => {
-    currentSort = "new";
-    currentFollowing = false;
-    sortNew.classList.add("active");
-    sortPop.classList.remove("active");
-    sortFollowing.classList.remove("active");
+  function setSort(s: "new" | "popular" | "trending", following = false) {
+    currentSort = s;
+    currentFollowing = following;
+    [sortNew, sortPop, sortTrending, sortFollowing].forEach(b => b.classList.remove("active"));
+    if (following) sortFollowing.classList.add("active");
+    else if (s === "new") sortNew.classList.add("active");
+    else if (s === "popular") sortPop.classList.add("active");
+    else sortTrending.classList.add("active");
     load(true);
-  });
+  }
 
-  sortPop.addEventListener("click", () => {
-    currentSort = "popular";
-    currentFollowing = false;
-    sortPop.classList.add("active");
-    sortNew.classList.remove("active");
-    sortFollowing.classList.remove("active");
-    load(true);
-  });
-
-  sortFollowing.addEventListener("click", () => {
-    currentFollowing = true;
-    sortFollowing.classList.add("active");
-    sortNew.classList.remove("active");
-    sortPop.classList.remove("active");
-    load(true);
-  });
+  sortNew.addEventListener("click", () => setSort("new"));
+  sortPop.addEventListener("click", () => setSort("popular"));
+  sortTrending.addEventListener("click", () => setSort("trending"));
+  sortFollowing.addEventListener("click", () => setSort("new", true));
 
   typeSelect.addEventListener("change", () => {
     currentType = typeSelect.value;
@@ -311,7 +233,6 @@ export function mountFeed(app: HTMLElement) {
     }, 400);
   });
 
-  // IntersectionObserver for infinite scroll
   const observer = new IntersectionObserver(entries => {
     if (entries[0].isIntersecting) {
       currentPage++;
@@ -320,7 +241,6 @@ export function mountFeed(app: HTMLElement) {
   }, { rootMargin: "200px" });
   observer.observe(sentinel);
 
-  // Restore scroll position from previous visit
   wrap.scrollTop = savedScrollTop;
   wrap.addEventListener("scroll", () => { savedScrollTop = wrap.scrollTop; }, { passive: true });
 
