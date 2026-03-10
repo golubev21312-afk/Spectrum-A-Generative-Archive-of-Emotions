@@ -36,3 +36,6 @@ npm-debug.log*
 # Vite
 .vite/
 
+# E2E tests
+e2e/
+
