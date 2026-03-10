@@ -117,6 +117,26 @@ async def init_db() -> None:
         await conn.execute("""
             ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR(160);
         """)
+        # CHECK constraints (idempotent — silently skip if already exist)
+        for stmt in [
+            """DO $$ BEGIN
+                ALTER TABLE users ADD CONSTRAINT chk_username_len
+                    CHECK (LENGTH(username) >= 2 AND LENGTH(username) <= 32);
+               EXCEPTION WHEN duplicate_object THEN NULL; END $$;""",
+            """DO $$ BEGIN
+                ALTER TABLE users ADD CONSTRAINT chk_bio_len
+                    CHECK (bio IS NULL OR LENGTH(bio) <= 160);
+               EXCEPTION WHEN duplicate_object THEN NULL; END $$;""",
+            """DO $$ BEGIN
+                ALTER TABLE emotions ADD CONSTRAINT chk_emotion_type_len
+                    CHECK (emotion_type IS NULL OR LENGTH(emotion_type) <= 64);
+               EXCEPTION WHEN duplicate_object THEN NULL; END $$;""",
+            """DO $$ BEGIN
+                ALTER TABLE comments ADD CONSTRAINT chk_comment_text_len
+                    CHECK (LENGTH(text) >= 1 AND LENGTH(text) <= 280);
+               EXCEPTION WHEN duplicate_object THEN NULL; END $$;""",
+        ]:
+            await conn.execute(stmt)
 
 
 async def close_db() -> None:
