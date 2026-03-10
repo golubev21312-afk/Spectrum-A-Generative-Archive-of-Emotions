@@ -2,6 +2,7 @@ import { CubeScene, CubeParams } from "./cube";
 import { getEmotion, likeEmotion, unlikeEmotion, isLoggedIn } from "./api";
 import { AmbientAudio } from "./audio";
 import { t, detectEmotion } from "./i18n";
+import { mountComments } from "./comments";
 
 export function mountEmotionPage(app: HTMLElement, id: number) {
   const cubeScene = new CubeScene(app);
@@ -81,6 +82,12 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
     }
   });
 
+  // Comments panel (outside overlay, below cube)
+  const commentsPanel = document.createElement("div");
+  commentsPanel.className = "emotion-page-comments";
+  app.appendChild(commentsPanel);
+  mountComments(commentsPanel, id);
+
   getEmotion(id).then(emotion => {
     liked = emotion.liked_by_me;
     likesCount = emotion.likes_count;
@@ -106,5 +113,6 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
     cubeScene.dispose();
     audio.dispose();
     document.removeEventListener("click", startAudio);
+    commentsPanel.remove();
   };
 }
