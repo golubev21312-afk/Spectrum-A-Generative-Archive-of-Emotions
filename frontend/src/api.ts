@@ -27,7 +27,26 @@ export interface UserProfile {
   created_at: string;
   emotion_count: number;
   likes_count: number;
+  followers_count: number;
+  following_count: number;
+  is_following: boolean;
   emotions: EmotionResponse[];
+}
+
+export interface NotificationResponse {
+  id: number;
+  type: string;
+  from_username?: string;
+  emotion_id?: number;
+  read: boolean;
+  created_at: string;
+}
+
+export interface CommentResponse {
+  id: number;
+  username: string;
+  text: string;
+  created_at: string;
 }
 
 export interface AuthResponse {
@@ -112,6 +131,7 @@ export async function getFeed(params: {
   emotion_type?: string;
   sort?: "new" | "popular";
   author?: string;
+  following?: boolean;
 }): Promise<EmotionFeed> {
   const q = new URLSearchParams();
   if (params.page) q.set("page", String(params.page));
@@ -119,6 +139,7 @@ export async function getFeed(params: {
   if (params.emotion_type) q.set("emotion_type", params.emotion_type);
   if (params.sort) q.set("sort", params.sort);
   if (params.author) q.set("author", params.author);
+  if (params.following) q.set("following", "true");
   const res = await fetch(`${API_BASE}/emotions?${q}`, {
     headers: authHeaders(),
   });
@@ -148,4 +169,70 @@ export async function getUserProfile(username: string): Promise<UserProfile> {
   });
   if (!res.ok) throw new Error(`Profile failed: ${res.status}`);
   return res.json();
+}
+
+export async function getLikedEmotions(username: string, page = 1): Promise<EmotionFeed> {
+  const res = await fetch(`${API_BASE}/users/${username}/liked?page=${page}&limit=20`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`Liked failed: ${res.status}`);
+  return res.json();
+}
+
+export async function followUser(username: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/users/${username}/follow`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`Follow failed: ${res.status}`);
+}
+
+export async function unfollowUser(username: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/users/${username}/follow`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`Unfollow failed: ${res.status}`);
+}
+
+export async function getNotifications(): Promise<NotificationResponse[]> {
+  const res = await fetch(`${API_BASE}/notifications`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`Notifications failed: ${res.status}`);
+  return res.json();
+}
+
+export async function markNotificationsRead(): Promise<void> {
+  await fetch(`${API_BASE}/notifications/read`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+}
+
+export async function getComments(emotionId: number): Promise<CommentResponse[]> {
+  const res = await fetch(`${API_BASE}/emotions/${emotionId}/comments`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`Comments failed: ${res.status}`);
+  return res.json();
+}
+
+export async function addComment(emotionId: number, text: string): Promise<CommentResponse> {
+  const res = await fetch(`${API_BASE}/emotions/${emotionId}/comments`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) throw new Error(`Comment failed: ${res.status}`);
+  return res.json();
+}
+
+export async function getUnreadCount(): Promise<number> {
+  try {
+    const items = await getNotifications();
+    return items.filter(n => !n.read).length;
+  } catch {
+    return 0;
+  }
 }

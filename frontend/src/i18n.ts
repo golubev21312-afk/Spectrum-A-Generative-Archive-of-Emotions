@@ -62,6 +62,23 @@ const texts = {
   feedEmptyTitle: { ru: "Пока тихо", en: "Still quiet here" },
   feedEmptyText: { ru: "Станьте первым — создайте свою эмоцию", en: "Be the first — create your emotion" },
   feedEmptyAction: { ru: "Создать эмоцию →", en: "Create emotion →" },
+  notifications: { ru: "Уведомления", en: "Notifications" },
+  noNotifications: { ru: "Пока ничего нет", en: "Nothing yet" },
+  markRead: { ru: "Отметить все прочитанными", en: "Mark all as read" },
+  notifLiked: { ru: "оценил вашу эмоцию", en: "liked your emotion" },
+  notifCommented: { ru: "прокомментировал вашу эмоцию", en: "commented on your emotion" },
+  comments: { ru: "Комментарии", en: "Comments" },
+  noComments: { ru: "Комментариев пока нет", en: "No comments yet" },
+  commentPlaceholder: { ru: "Напишите комментарий...", en: "Write a comment..." },
+  loginToComment: { ru: "Войдите чтобы комментировать", en: "Log in to comment" },
+  send: { ru: "Отправить", en: "Send" },
+  follow: { ru: "Подписаться", en: "Follow" },
+  unfollow: { ru: "Отписаться", en: "Unfollow" },
+  followers: { ru: "подписчиков", en: "followers" },
+  following: { ru: "подписок", en: "following" },
+  followingFeed: { ru: "Подписки", en: "Following" },
+  likedTab: { ru: "Лайки", en: "Liked" },
+  myEmotions: { ru: "Эмоции", en: "Emotions" },
 } as const;
 
 interface EmotionRule {
