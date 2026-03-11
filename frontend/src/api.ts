@@ -6,7 +6,7 @@ const API_BASE = "http://localhost:8000";
 
 export interface EmotionResponse {
   id: number;
-  parameters: Record<string, number>;
+  parameters: Record<string, unknown>;
   created_at: string;
   username?: string;
   emotion_type?: string;
@@ -150,7 +150,7 @@ export async function login(
 }
 
 export async function saveEmotion(
-  parameters: Record<string, number>,
+  parameters: Record<string, unknown>,
   emotion_type?: string,
   thumbnail?: string
 ): Promise<{ id: number }> {

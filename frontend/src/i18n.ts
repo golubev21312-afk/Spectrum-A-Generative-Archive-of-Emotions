@@ -117,6 +117,20 @@ const texts = {
   removeFromCollection: { ru: "Убрать", en: "Remove" },
   embed: { ru: "Встроить", en: "Embed" },
   embedCopied: { ru: "iframe скопирован", en: "iframe copied" },
+  zodiacPicker: { ru: "Форма", en: "Shape" },
+  zodiacCube: { ru: "Куб", en: "Cube" },
+  zodiacAries: { ru: "Овен", en: "Aries" },
+  zodiacTaurus: { ru: "Телец", en: "Taurus" },
+  zodiacGemini: { ru: "Близнецы", en: "Gemini" },
+  zodiacCancer: { ru: "Рак", en: "Cancer" },
+  zodiacLeo: { ru: "Лев", en: "Leo" },
+  zodiacVirgo: { ru: "Дева", en: "Virgo" },
+  zodiacLibra: { ru: "Весы", en: "Libra" },
+  zodiacScorpio: { ru: "Скорпион", en: "Scorpio" },
+  zodiacSagittarius: { ru: "Стрелец", en: "Sagittarius" },
+  zodiacCapricorn: { ru: "Козерог", en: "Capricorn" },
+  zodiacAquarius: { ru: "Водолей", en: "Aquarius" },
+  zodiacPisces: { ru: "Рыбы", en: "Pisces" },
 } as const;
 
 interface EmotionRule {
@@ -145,9 +159,10 @@ const EMOTION_RULES: EmotionRule[] = [
 
 const DEFAULT_EMOTION = { ru: "Безмятежность", en: "Serenity" };
 
-export function detectEmotion(params: Record<string, number>): string {
+export function detectEmotion(params: Record<string, unknown>): string {
+  const p = params as Record<string, number>;
   for (const rule of EMOTION_RULES) {
-    if (rule.test(params)) return rule[current];
+    if (rule.test(p)) return rule[current];
   }
   return DEFAULT_EMOTION[current];
 }

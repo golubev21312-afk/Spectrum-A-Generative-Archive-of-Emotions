@@ -6,6 +6,7 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import vertexShader from "./shaders/vertex.glsl";
 import fragmentShader from "./shaders/fragment.glsl";
+import { buildZodiacGeometry } from "./zodiac";
 
 // ─── Postprocessing shaders ───────────────────────────────────────────────────
 
@@ -158,6 +159,7 @@ export interface CubeParams {
   rotationSpeed: number;
   noiseAmplitude: number;
   particleDensity: number;
+  shape?: string; // "cube" | zodiac sign id
 }
 
 export const DEFAULT_PARAMS: CubeParams = {
@@ -207,6 +209,7 @@ export class CubeScene {
   private animationId = 0;
   private cubeScaleTarget = 1;
   private transitionCallback: (() => void) | null = null;
+  private currentShape = "cube";
 
   constructor(private container: HTMLElement) {
     this.isMobile = window.innerWidth < 768;
@@ -507,6 +510,24 @@ export class CubeScene {
     if (params.particleDensity !== undefined) {
       this.createParticles(params.particleDensity);
     }
+    if (params.shape !== undefined) {
+      this.swapGeometry(params.shape);
+    }
+  }
+
+  private swapGeometry(shape: string) {
+    const id = shape || "cube";
+    if (id === this.currentShape) return;
+    this.currentShape = id;
+    const oldGeo = this.cube.geometry;
+    if (id === "cube") {
+      const seg = this.isMobile ? 16 : 32;
+      const size = this.isMobile ? 1.1 : 1.6;
+      this.cube.geometry = new THREE.BoxGeometry(size, size, size, seg, seg, seg);
+    } else {
+      this.cube.geometry = buildZodiacGeometry(id);
+    }
+    oldGeo.dispose();
   }
 
   /** Set particle force: positive = attract toward cube, negative = repel */
@@ -534,6 +555,7 @@ export class CubeScene {
       particleDensity: this.particles
         ? this.particles.geometry.attributes.position.count
         : 0,
+      shape: this.currentShape,
     };
   }
 

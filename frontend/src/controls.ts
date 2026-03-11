@@ -1,5 +1,6 @@
 import { CubeParams, DEFAULT_PARAMS } from "./cube";
 import { t, detectEmotion } from "./i18n";
+import { ZODIAC_SIGNS } from "./zodiac";
 
 interface SliderConfig {
   key: keyof CubeParams;
@@ -19,6 +20,20 @@ const SLIDERS: SliderConfig[] = [
   { key: "particleDensity", labelKey: "particles", hintKey: "hintParticles", min: 0, max: 500, step: 1, default: DEFAULT_PARAMS.particleDensity },
 ];
 
+const ZODIAC_SYMBOLS: Record<string, string> = {
+  cube: "⬛", aries: "♈", taurus: "♉", gemini: "♊", cancer: "♋",
+  leo: "♌", virgo: "♍", libra: "♎", scorpio: "♏", sagittarius: "♐",
+  capricorn: "♑", aquarius: "♒", pisces: "♓",
+};
+
+const ZODIAC_I18N_KEY: Record<string, string> = {
+  cube: "zodiacCube", aries: "zodiacAries", taurus: "zodiacTaurus",
+  gemini: "zodiacGemini", cancer: "zodiacCancer", leo: "zodiacLeo",
+  virgo: "zodiacVirgo", libra: "zodiacLibra", scorpio: "zodiacScorpio",
+  sagittarius: "zodiacSagittarius", capricorn: "zodiacCapricorn",
+  aquarius: "zodiacAquarius", pisces: "zodiacPisces",
+};
+
 export function createControls(
   container: HTMLElement,
   onChange: (params: Partial<CubeParams>) => void,
@@ -30,6 +45,41 @@ export function createControls(
   const title = document.createElement("h2");
   title.textContent = t("params");
   panel.appendChild(title);
+
+  // ── Zodiac shape picker ──────────────────────────────────────────────────
+  let currentShape = "cube";
+
+  const pickerWrap = document.createElement("div");
+  pickerWrap.className = "zodiac-picker";
+  const pickerLabel = document.createElement("div");
+  pickerLabel.className = "zodiac-picker-label";
+  pickerLabel.textContent = t("zodiacPicker");
+  pickerWrap.appendChild(pickerLabel);
+
+  const pickerGrid = document.createElement("div");
+  pickerGrid.className = "zodiac-picker-grid";
+
+  const shapeButtons: Record<string, HTMLButtonElement> = {};
+
+  const allShapes = ["cube", ...ZODIAC_SIGNS];
+  for (const id of allShapes) {
+    const btn = document.createElement("button");
+    btn.className = "zodiac-btn" + (id === "cube" ? " zodiac-btn--active" : "");
+    btn.title = t(ZODIAC_I18N_KEY[id] as Parameters<typeof t>[0]);
+    btn.innerHTML = `<span class="zodiac-symbol">${ZODIAC_SYMBOLS[id]}</span><span class="zodiac-name">${t(ZODIAC_I18N_KEY[id] as Parameters<typeof t>[0])}</span>`;
+    btn.addEventListener("click", () => {
+      shapeButtons[currentShape]?.classList.remove("zodiac-btn--active");
+      currentShape = id;
+      btn.classList.add("zodiac-btn--active");
+      onChange({ shape: id });
+    });
+    shapeButtons[id] = btn;
+    pickerGrid.appendChild(btn);
+  }
+
+  pickerWrap.appendChild(pickerGrid);
+  panel.appendChild(pickerWrap);
+  // ────────────────────────────────────────────────────────────────────────
 
   const emotionBox = document.createElement("div");
   emotionBox.className = "emotion-label";
@@ -101,13 +151,17 @@ export function createControls(
   container.appendChild(panel);
 
   return {
-    getValues: () => ({ ...values }) as unknown as CubeParams,
+    getValues: () => ({ ...values, shape: currentShape }) as unknown as CubeParams,
     setValues: (params: Partial<CubeParams>) => {
       for (const [key, val] of Object.entries(params)) {
-        if (key in values && typeof val === "number") {
-          values[key] = val;
+        if (key === "shape" && typeof val === "string") {
+          shapeButtons[currentShape]?.classList.remove("zodiac-btn--active");
+          currentShape = val;
+          shapeButtons[val]?.classList.add("zodiac-btn--active");
+        } else if (key in values && typeof val === "number") {
+          values[key] = val as number;
           if (sliderInputs[key]) sliderInputs[key].value = String(val);
-          if (sliderSpans[key]) sliderSpans[key].textContent = sliderSteps[key] < 1 ? val.toFixed(2) : String(val);
+          if (sliderSpans[key]) sliderSpans[key].textContent = sliderSteps[key] < 1 ? (val as number).toFixed(2) : String(val);
         }
       }
       onChange({ ...params });

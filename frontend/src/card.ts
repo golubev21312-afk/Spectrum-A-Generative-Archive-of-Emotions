@@ -2,9 +2,9 @@ import { likeEmotion, unlikeEmotion, reactEmotion, isLoggedIn, EmotionResponse }
 import { t } from "./i18n";
 import { createAvatarCanvas } from "./avatar";
 
-export function emotionPreviewStyle(params: Record<string, number>): string {
-  const h = params.hue ?? 160;
-  const tr = params.transparency ?? 0.3;
+export function emotionPreviewStyle(params: Record<string, unknown>): string {
+  const h = Number(params.hue ?? 160);
+  const tr = Number(params.transparency ?? 0.3);
   const l1 = Math.round(15 + (1 - tr) * 20);
   const l2 = Math.round(30 + (1 - tr) * 25);
   return `background: linear-gradient(135deg,

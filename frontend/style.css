@@ -2345,3 +2345,72 @@ html[data-theme="light"] .skeleton-line {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* ── Zodiac picker ─────────────────────────────────────────────────────────── */
+.zodiac-picker {
+  margin-bottom: 16px;
+}
+.zodiac-picker-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.zodiac-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+  gap: 5px;
+}
+.zodiac-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 5px 2px 4px;
+  transition: border-color 0.18s, background 0.18s;
+  color: var(--text);
+}
+.zodiac-btn:hover {
+  border-color: rgba(0,255,170,0.45);
+  background: rgba(0,255,170,0.07);
+}
+.zodiac-btn--active {
+  border-color: var(--accent) !important;
+  background: rgba(0,255,170,0.12) !important;
+  color: var(--accent);
+}
+.zodiac-symbol {
+  font-size: 16px;
+  line-height: 1;
+}
+.zodiac-name {
+  font-size: 9px;
+  opacity: 0.75;
+  text-align: center;
+  line-height: 1.1;
+  max-width: 52px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* light theme */
+html[data-theme="light"] .zodiac-btn {
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.10);
+  color: #1a1a2e;
+}
+html[data-theme="light"] .zodiac-btn:hover {
+  border-color: rgba(0,180,120,0.5);
+  background: rgba(0,180,120,0.08);
+}
+html[data-theme="light"] .zodiac-btn--active {
+  border-color: #009966 !important;
+  background: rgba(0,153,102,0.12) !important;
+  color: #007a52;
+}

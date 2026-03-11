@@ -64,7 +64,7 @@ export function mountFeed(app: HTMLElement) {
       const chip = document.createElement("a");
       chip.className = "feed-today-chip";
       chip.href = `#/emotion/${emotion.id}`;
-      const h = emotion.parameters.hue ?? 160;
+      const h = Number(emotion.parameters.hue ?? 160);
       chip.style.cssText = `background: linear-gradient(135deg, hsl(${h},60%,18%) 0%, hsl(${(h+50)%360},70%,24%) 100%); border-color: hsl(${h},60%,30%)`;
       chip.innerHTML = `
         <span class="feed-today-type">${emotion.emotion_type || "—"}</span>
