@@ -117,6 +117,8 @@ const texts = {
   removeFromCollection: { ru: "Убрать", en: "Remove" },
   embed: { ru: "Встроить", en: "Embed" },
   embedCopied: { ru: "iframe скопирован", en: "iframe copied" },
+  particleHue: { ru: "Цвет частиц", en: "Particle color" },
+  hintParticleHue: { ru: "Оттенок частиц вокруг фигуры", en: "Particle hue around the shape" },
   zodiacPicker: { ru: "Форма", en: "Shape" },
   zodiacCube: { ru: "Куб", en: "Cube" },
   zodiacAries: { ru: "Овен", en: "Aries" },

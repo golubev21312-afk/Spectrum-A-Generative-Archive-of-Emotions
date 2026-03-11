@@ -4,8 +4,8 @@ import { ZODIAC_SIGNS } from "./zodiac";
 
 interface SliderConfig {
   key: keyof CubeParams;
-  labelKey: "hue" | "transparency" | "rotation" | "noise" | "particles";
-  hintKey: "hintHue" | "hintTransparency" | "hintRotation" | "hintNoise" | "hintParticles";
+  labelKey: "hue" | "transparency" | "rotation" | "noise" | "particles" | "particleHue";
+  hintKey: "hintHue" | "hintTransparency" | "hintRotation" | "hintNoise" | "hintParticles" | "hintParticleHue";
   min: number;
   max: number;
   step: number;
@@ -18,6 +18,7 @@ const SLIDERS: SliderConfig[] = [
   { key: "rotationSpeed", labelKey: "rotation", hintKey: "hintRotation", min: 0, max: 5, step: 0.1, default: DEFAULT_PARAMS.rotationSpeed },
   { key: "noiseAmplitude", labelKey: "noise", hintKey: "hintNoise", min: 0, max: 2, step: 0.01, default: DEFAULT_PARAMS.noiseAmplitude },
   { key: "particleDensity", labelKey: "particles", hintKey: "hintParticles", min: 0, max: 500, step: 1, default: DEFAULT_PARAMS.particleDensity },
+  { key: "particleHue", labelKey: "particleHue", hintKey: "hintParticleHue", min: 0, max: 360, step: 1, default: DEFAULT_PARAMS.particleHue! },
 ];
 
 const ZODIAC_SYMBOLS: Record<string, string> = {

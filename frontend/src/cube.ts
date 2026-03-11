@@ -151,6 +151,47 @@ const gridFragShader = GLSL_HSL2RGB + `
   }
 `;
 
+// ─── Morph shaders ────────────────────────────────────────────────────────────
+
+const morphVertShader = `
+  attribute vec3 aFrom;
+  attribute vec3 aTo;
+  uniform float uMorphT;
+  void main() {
+    vec3 scatter = normalize(aFrom + aTo + vec3(0.001)) * sin(uMorphT * 3.14159) * 0.5;
+    vec3 pos = mix(aFrom, aTo, uMorphT) + scatter;
+    vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+    gl_PointSize = 2.5 * (200.0 / -mv.z);
+    gl_Position = projectionMatrix * mv;
+  }
+`;
+
+const morphFragShader = GLSL_HSL2RGB + `
+  uniform float uHue;
+  uniform float uMorphT;
+  uniform float uFade;
+  void main() {
+    vec2 uv = gl_PointCoord - 0.5;
+    if (length(uv) > 0.5) discard;
+    float a = smoothstep(0.5, 0.1, length(uv)) * uFade;
+    vec3 col = hsl2rgb(mod(uHue + uMorphT * 50.0, 360.0), 1.0, 0.72);
+    gl_FragColor = vec4(col, a * 0.9);
+  }
+`;
+
+function sampleGeoPositions(geo: THREE.BufferGeometry, n: number): Float32Array {
+  const pos = geo.attributes.position;
+  const count = pos.count;
+  const result = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const idx = Math.floor(Math.random() * count);
+    result[i * 3]     = pos.getX(idx);
+    result[i * 3 + 1] = pos.getY(idx);
+    result[i * 3 + 2] = pos.getZ(idx);
+  }
+  return result;
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface CubeParams {
@@ -159,6 +200,7 @@ export interface CubeParams {
   rotationSpeed: number;
   noiseAmplitude: number;
   particleDensity: number;
+  particleHue?: number;
   shape?: string; // "cube" | zodiac sign id
 }
 
@@ -168,6 +210,7 @@ export const DEFAULT_PARAMS: CubeParams = {
   rotationSpeed: 1,
   noiseAmplitude: 0.3,
   particleDensity: 200,
+  particleHue: 160,
 };
 
 // ─── CubeScene ────────────────────────────────────────────────────────────────
@@ -203,6 +246,9 @@ export class CubeScene {
   private touchStartX = 0;
   private touchStartY = 0;
 
+  // Particle hue (independent of cube hue)
+  private currentParticleHue = DEFAULT_PARAMS.particleHue!;
+
   // Animation state
   private clock = new THREE.Clock();
   private rotationSpeed = DEFAULT_PARAMS.rotationSpeed;
@@ -210,6 +256,14 @@ export class CubeScene {
   private cubeScaleTarget = 1;
   private transitionCallback: (() => void) | null = null;
   private currentShape = "cube";
+
+  // Morph state
+  private morphState: "idle" | "morphing" | "fading" = "idle";
+  private morphProgress = 0;
+  private morphFade = 1;
+  private morphParticles: THREE.Points | null = null;
+  private morphMat: THREE.ShaderMaterial | null = null;
+  private morphTargetGeo: THREE.BufferGeometry | null = null;
 
   constructor(private container: HTMLElement) {
     this.isMobile = window.innerWidth < 768;
@@ -345,8 +399,7 @@ export class CubeScene {
     geo.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
 
     const pixelRatio = Math.min(window.devicePixelRatio, this.isMobile ? 1 : 2);
-    const currentHue = this.material?.uniforms.uHue.value ?? DEFAULT_PARAMS.hue;
-    const particleColor = new THREE.Color().setHSL(currentHue / 360, 1.0, 0.55);
+    const particleColor = new THREE.Color().setHSL(this.currentParticleHue / 360, 1.0, 0.55);
 
     this.particleMat = new THREE.ShaderMaterial({
       uniforms: {
@@ -446,6 +499,36 @@ export class CubeScene {
       cb();
     }
 
+    // Morph animation
+    if (this.morphState !== "idle" && this.morphMat) {
+      if (this.morphState === "morphing") {
+        this.morphProgress = Math.min(this.morphProgress + 1 / 50, 1.0);
+        this.morphMat.uniforms.uMorphT.value = this.morphProgress;
+        if (this.morphProgress >= 1.0) {
+          const oldGeo = this.cube.geometry;
+          this.cube.geometry = this.morphTargetGeo!;
+          this.morphTargetGeo = null;
+          oldGeo.dispose();
+          this.cube.scale.setScalar(0);
+          this.cubeScaleTarget = 1;
+          this.cube.visible = true;
+          this.morphState = "fading";
+          this.morphFade = 1.0;
+        }
+      } else if (this.morphState === "fading") {
+        this.morphFade = Math.max(this.morphFade - 1 / 20, 0);
+        this.morphMat.uniforms.uFade.value = this.morphFade;
+        if (this.morphFade <= 0) {
+          this.scene.remove(this.morphParticles!);
+          this.morphParticles!.geometry.dispose();
+          this.morphMat.dispose();
+          this.morphParticles = null;
+          this.morphMat = null;
+          this.morphState = "idle";
+        }
+      }
+    }
+
     this.cube.rotation.x += 0.003 * this.rotationSpeed;
     this.cube.rotation.y += 0.005 * this.rotationSpeed;
 
@@ -494,9 +577,13 @@ export class CubeScene {
       this.material.uniforms.uHue.value = params.hue;
       if (this.bgMaterial) this.bgMaterial.uniforms.uHue.value = params.hue;
       if (this.gridMaterial) this.gridMaterial.uniforms.uHue.value = params.hue;
-      const particleColor = new THREE.Color().setHSL(params.hue / 360, 1.0, 0.55);
-      this.particleMat?.uniforms.uColor.value.copy(particleColor);
-      this.trailMat?.uniforms.uColor.value.copy(particleColor);
+      if (this.morphMat) this.morphMat.uniforms.uHue.value = params.hue;
+    }
+    if (params.particleHue !== undefined) {
+      this.currentParticleHue = params.particleHue;
+      const c = new THREE.Color().setHSL(params.particleHue / 360, 1.0, 0.55);
+      this.particleMat?.uniforms.uColor.value.copy(c);
+      this.trailMat?.uniforms.uColor.value.copy(c);
     }
     if (params.transparency !== undefined) {
       this.material.uniforms.uTransparency.value = params.transparency;
@@ -517,17 +604,55 @@ export class CubeScene {
 
   private swapGeometry(shape: string) {
     const id = shape || "cube";
-    if (id === this.currentShape) return;
+    if (id === this.currentShape || this.morphState !== "idle") return;
     this.currentShape = id;
-    const oldGeo = this.cube.geometry;
-    if (id === "cube") {
-      const seg = this.isMobile ? 16 : 32;
-      const size = this.isMobile ? 1.1 : 1.6;
-      this.cube.geometry = new THREE.BoxGeometry(size, size, size, seg, seg, seg);
-    } else {
-      this.cube.geometry = buildZodiacGeometry(id);
+    const newGeo = id === "cube"
+      ? new THREE.BoxGeometry(
+          this.isMobile ? 1.1 : 1.6, this.isMobile ? 1.1 : 1.6, this.isMobile ? 1.1 : 1.6,
+          this.isMobile ? 16 : 32, this.isMobile ? 16 : 32, this.isMobile ? 16 : 32,
+        )
+      : buildZodiacGeometry(id);
+    this.startMorph(newGeo);
+  }
+
+  private startMorph(newGeo: THREE.BufferGeometry) {
+    const N = 1000;
+    const posA = sampleGeoPositions(this.cube.geometry, N);
+    const posB = sampleGeoPositions(newGeo, N);
+
+    const morphGeo = new THREE.BufferGeometry();
+    morphGeo.setAttribute("position", new THREE.BufferAttribute(posA.slice(), 3));
+    morphGeo.setAttribute("aFrom", new THREE.BufferAttribute(posA, 3));
+    morphGeo.setAttribute("aTo", new THREE.BufferAttribute(posB, 3));
+
+    if (this.morphParticles) {
+      this.scene.remove(this.morphParticles);
+      this.morphParticles.geometry.dispose();
+      this.morphMat?.dispose();
     }
-    oldGeo.dispose();
+
+    this.morphMat = new THREE.ShaderMaterial({
+      vertexShader: morphVertShader,
+      fragmentShader: morphFragShader,
+      uniforms: {
+        uMorphT: { value: 0 },
+        uHue:    { value: this.material.uniforms.uHue.value },
+        uFade:   { value: 1.0 },
+      },
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+
+    this.morphParticles = new THREE.Points(morphGeo, this.morphMat);
+    this.morphParticles.frustumCulled = false;
+    this.scene.add(this.morphParticles);
+
+    this.morphTargetGeo = newGeo;
+    this.morphProgress = 0;
+    this.morphFade = 1.0;
+    this.morphState = "morphing";
+    this.cube.visible = false;
   }
 
   /** Set particle force: positive = attract toward cube, negative = repel */
@@ -556,6 +681,7 @@ export class CubeScene {
         ? this.particles.geometry.attributes.position.count
         : 0,
       shape: this.currentShape,
+      particleHue: this.currentParticleHue,
     };
   }
 
@@ -570,6 +696,8 @@ export class CubeScene {
     this.cube.geometry.dispose();
     if (this.particles) { this.particles.geometry.dispose(); this.particleMat?.dispose(); }
     if (this.trailParticles) { this.trailParticles.geometry.dispose(); this.trailMat?.dispose(); }
+    if (this.morphParticles) { this.morphParticles.geometry.dispose(); this.morphMat?.dispose(); }
+    this.morphTargetGeo?.dispose();
     this.bgMaterial?.dispose();
     this.gridMaterial?.dispose();
     this.renderer.domElement.remove();
