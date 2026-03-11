@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#050a0f"/>
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00ffaa" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#00aaff" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#aa00ff" stop-opacity="0.9"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00ffaa" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#00aaff" stop-opacity="0.15"/>
+    </linearGradient>
+  </defs>
+  <!-- Cube front face -->
+  <polygon points="256,120 380,190 380,330 256,400 132,330 132,190" fill="url(#g2)" stroke="url(#g1)" stroke-width="4"/>
+  <!-- Cube top face -->
+  <polygon points="256,120 380,190 256,260 132,190" fill="url(#g1)" opacity="0.35"/>
+  <!-- Cube right face -->
+  <polygon points="380,190 380,330 256,400 256,260" fill="url(#g1)" opacity="0.2"/>
+  <!-- Center glow -->
+  <circle cx="256" cy="260" r="30" fill="#00ffaa" opacity="0.12"/>
+  <circle cx="256" cy="260" r="14" fill="#00ffaa" opacity="0.22"/>
+</svg>
