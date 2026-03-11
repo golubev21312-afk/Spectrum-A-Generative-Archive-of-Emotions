@@ -14,7 +14,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from database import get_pool, init_db, close_db
 from helpers import build_emotion
-from widget import build_widget_html
+from widget import build_widget_html, SHAPE_NAMES_EN
 from models import (EmotionIn, EmotionOut, EmotionFeed, UserRegister, UserOut, UserProfile,
                     NotificationOut, CommentIn, CommentOut, BioUpdate, EmotionTypeUpdate,
                     OkResponse, LoginOut, EmotionCreatedOut, UserListItem, ReactIn,
@@ -242,10 +242,12 @@ async def widget_standalone(
     noise: float = Query(0.4, ge=0, le=2),
     particles: float = Query(200, ge=0, le=500),
     emotion: str = Query(""),
+    shape: str = Query("cube"),
 ):
     return HTMLResponse(build_widget_html(
         hue=hue, transparency=transparency, rotation_speed=rotation,
-        noise_amplitude=noise, particle_density=particles, emotion_type=emotion,
+        noise_amplitude=noise, particle_density=particles,
+        shape=shape, emotion_type=emotion,
     ))
 
 
@@ -266,6 +268,7 @@ async def widget_emotion(emotion_id: int):
         rotation_speed=p.get("rotationSpeed", 1.0),
         noise_amplitude=p.get("noiseAmplitude", 0.4),
         particle_density=p.get("particleDensity", 200),
+        shape=p.get("shape", "cube"),
         emotion_type=row["emotion_type"] or "",
         emotion_id=emotion_id,
         link_back=f"{FRONTEND_URL}/#/emotion/{emotion_id}",
@@ -278,7 +281,7 @@ async def share_emotion(emotion_id: int):
     pool = await get_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            """SELECT e.id, e.emotion_type, e.username, e.thumbnail
+            """SELECT e.id, e.emotion_type, e.username, e.thumbnail, e.parameters
                FROM emotions e WHERE e.id = $1""",
             emotion_id
         )
@@ -287,7 +290,11 @@ async def share_emotion(emotion_id: int):
 
     title = row["emotion_type"] or "Emotion"
     author = row["username"] or "Anonymous"
-    desc = f"A generative emotion by {author} on Spectrum"
+    import json as _json
+    _params = _json.loads(row["parameters"]) if row.get("parameters") else {}
+    _shape = _params.get("shape", "cube")
+    _shape_name = SHAPE_NAMES_EN.get(_shape, "Cube")
+    desc = f"A generative emotion by {author} on Spectrum · {_shape_name} shape"
     url = f"{FRONTEND_URL}/#/emotion/{emotion_id}"
     img = row["thumbnail"] or ""
 

@@ -116,12 +116,52 @@ void main(){
 """
 
 
+ZODIAC_JS = r"""
+function _rect(x,y,w,h){const s=new THREE.Shape();s.moveTo(x,y);s.lineTo(x+w,y);s.lineTo(x+w,y+h);s.lineTo(x,y+h);s.closePath();return s;}
+function _ring(cx,cy,R,r){const s=new THREE.Shape();s.absarc(cx,cy,R,0,Math.PI*2,false);const h=new THREE.Path();h.absarc(cx,cy,r,0,Math.PI*2,true);s.holes.push(h);return s;}
+function _arc(cx,cy,R,r,a0,a1){const s=new THREE.Shape();s.moveTo(cx+Math.cos(a0)*R,cy+Math.sin(a0)*R);s.absarc(cx,cy,R,a0,a1,false);s.absarc(cx,cy,r,a1,a0,true);s.closePath();return s;}
+function _star(n,R,r,rot){rot=rot||0;const s=new THREE.Shape();for(let i=0;i<n*2;i++){const a=(i/(n*2))*Math.PI*2+rot;const rd=i%2===0?R:r;if(i===0)s.moveTo(Math.cos(a)*rd,Math.sin(a)*rd);else s.lineTo(Math.cos(a)*rd,Math.sin(a)*rd);}s.closePath();return s;}
+const ZB={
+  aries:()=>[_arc(-0.48,0,0.65,0.40,0,Math.PI),_arc(0.48,0,0.65,0.40,0,Math.PI),_rect(-0.11,-0.48,0.22,0.55)],
+  taurus:()=>[_ring(0,-0.18,0.70,0.45),_arc(-0.42,0.52,0.46,0.28,-Math.PI*0.05,Math.PI*1.05),_arc(0.42,0.52,0.46,0.28,-Math.PI*0.05,Math.PI*1.05)],
+  gemini:()=>{const ph=1.4,pw=0.22,bw=1.52,bh=0.20,gap=0.38;return[_rect(-gap/2-pw,-ph/2,pw,ph),_rect(gap/2,-ph/2,pw,ph),_rect(-bw/2,ph/2,bw,bh),_rect(-bw/2,-ph/2-bh,bw,bh)];},
+  cancer:()=>[_arc(0.12,0.42,0.60,0.38,-Math.PI*0.25,Math.PI*1.25),_arc(-0.12,-0.42,0.60,0.38,Math.PI*0.75,Math.PI*2.25)],
+  leo:()=>{const t=new THREE.Shape();t.moveTo(0.70,0.20);t.bezierCurveTo(1.10,0.20,1.30,-0.10,1.10,-0.52);t.bezierCurveTo(0.90,-0.92,0.35,-0.98,0.18,-0.70);t.bezierCurveTo(0.46,-0.66,0.62,-0.40,0.52,-0.10);t.bezierCurveTo(0.50,0.00,0.46,0.06,0.46,0.06);t.lineTo(0.46,0.20);t.closePath();return[_ring(0,0.20,0.70,0.46),t];},
+  virgo:()=>_star(6,1.0,0.42,Math.PI/2),
+  libra:()=>[_arc(0,-0.12,0.62,0.42,0,Math.PI),_rect(-0.82,-0.46,1.64,0.18),_rect(-0.82,-0.80,1.64,0.18)],
+  scorpio:()=>{const lX=0.53,lW=0.18,aR=0.40,aT=0.18;const a=new THREE.Shape();a.moveTo(lX-lW/2,0.08);a.lineTo(lX+lW/2,0.08);a.lineTo(lX+lW/2,-0.40);a.lineTo(lX+0.24,-0.40);a.lineTo(lX,-0.72);a.lineTo(lX-0.24,-0.40);a.lineTo(lX-lW/2,-0.40);a.closePath();return[_arc(-0.42,0.08,aR,aR-aT,0,Math.PI),_arc(0.18,0.08,aR,aR-aT,0,Math.PI),_rect(-0.42-lW/2,0.08-0.70,lW,0.70),_rect(0.18-lW/2,0.08-0.42,lW,0.42),a];},
+  sagittarius:()=>{const s=new THREE.Shape();s.moveTo(0,1.0);s.lineTo(-0.38,0.32);s.lineTo(-0.14,0.32);s.lineTo(-0.14,-1.0);s.lineTo(0.14,-1.0);s.lineTo(0.14,0.32);s.lineTo(0.38,0.32);s.closePath();return s;},
+  capricorn:()=>{const h=_arc(-0.52,0.28,0.62,0.40,Math.PI*0.52,Math.PI*1.40);const b=new THREE.Shape();b.moveTo(-0.14,0.10);b.lineTo(0.10,0.10);b.lineTo(0.55,-0.52);b.bezierCurveTo(0.78,-0.82,1.05,-0.78,1.02,-0.52);b.bezierCurveTo(0.98,-0.26,0.70,-0.28,0.58,-0.48);b.lineTo(0.30,-0.20);b.lineTo(-0.10,0.10);b.closePath();return[h,b];},
+  aquarius:()=>{const h=0.16,A=0.28;return[0.28,-0.28].map(yB=>{const s=new THREE.Shape();s.moveTo(-1.0,yB);s.bezierCurveTo(-0.75,yB+A,-0.25,yB+A,0,yB);s.bezierCurveTo(0.25,yB-A,0.75,yB-A,1.0,yB);s.lineTo(1.0,yB+h);s.bezierCurveTo(0.75,yB+h-A,0.25,yB+h-A,0,yB+h);s.bezierCurveTo(-0.25,yB+h+A,-0.75,yB+h+A,-1.0,yB+h);s.closePath();return s;});},
+  pisces:()=>[_arc(0.10,0.48,0.60,0.38,Math.PI*0.15,Math.PI*0.85),_arc(-0.10,-0.48,0.60,0.38,Math.PI*1.15,Math.PI*1.85),_rect(-0.10,-0.10,0.20,0.20)],
+};
+function buildGeometry(shape){
+  const b=shape&&shape!=='cube'?ZB[shape]:null;
+  if(!b)return new THREE.BoxGeometry(1.6,1.6,1.6,32,32,32);
+  const arr=[b()].flat();
+  const geo=new THREE.ExtrudeGeometry(arr,{depth:1.0,bevelEnabled:true,bevelThickness:0.12,bevelSize:0.08,bevelSegments:4});
+  geo.center();geo.computeBoundingBox();
+  const sz=new THREE.Vector3();geo.boundingBox.getSize(sz);
+  const mxy=Math.max(sz.x,sz.y);if(mxy>0)geo.scale(1.6/mxy,1.6/mxy,1.6/mxy);
+  return geo;
+}
+"""
+
+SHAPE_NAMES_EN = {
+    "cube": "Cube", "aries": "Aries", "taurus": "Taurus", "gemini": "Gemini",
+    "cancer": "Cancer", "leo": "Leo", "virgo": "Virgo", "libra": "Libra",
+    "scorpio": "Scorpio", "sagittarius": "Sagittarius", "capricorn": "Capricorn",
+    "aquarius": "Aquarius", "pisces": "Pisces",
+}
+
+
 def build_widget_html(
     hue: float,
     transparency: float,
     rotation_speed: float,
     noise_amplitude: float,
     particle_density: float,
+    shape: str = "cube",
     emotion_type: str = "",
     emotion_id: int | None = None,
     link_back: str = "",
@@ -158,7 +198,8 @@ canvas{{display:block}}
 <script type="importmap">{{"imports":{{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}}}</script>
 <script type="module">
 import * as THREE from 'three';
-const P={{hue:{hue},transparency:{transparency},rotationSpeed:{rotation_speed},noiseAmplitude:{noise_amplitude},particleDensity:{particle_density}}};
+const P={{hue:{hue},transparency:{transparency},rotationSpeed:{rotation_speed},noiseAmplitude:{noise_amplitude},particleDensity:{particle_density},shape:'{shape}'}};
+{ZODIAC_JS}
 const renderer=new THREE.WebGLRenderer({{antialias:true}});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setSize(innerWidth,innerHeight);
@@ -170,7 +211,7 @@ camera.position.set(0,0,4.5);
 const bgMat=new THREE.ShaderMaterial({{vertexShader:{repr(BG_VERT)},fragmentShader:{repr(BG_FRAG)},side:THREE.BackSide,uniforms:{{uHue:{{value:P.hue}},uTime:{{value:0}}}}}});
 scene.add(new THREE.Mesh(new THREE.SphereGeometry(80,32,32),bgMat));
 const cubeMat=new THREE.ShaderMaterial({{vertexShader:{repr(VERTEX_SHADER)},fragmentShader:{repr(FRAGMENT_SHADER)},transparent:true,side:THREE.DoubleSide,uniforms:{{uHue:{{value:P.hue}},uTransparency:{{value:P.transparency}},uNoiseAmp:{{value:P.noiseAmplitude}},uTime:{{value:0}}}}}});
-const cube=new THREE.Mesh(new THREE.BoxGeometry(1.6,1.6,1.6,32,32,32),cubeMat);
+const cube=new THREE.Mesh(buildGeometry(P.shape),cubeMat);
 scene.add(cube);
 const glowMat=new THREE.ShaderMaterial({{vertexShader:{repr(GLOW_VERT)},fragmentShader:{repr(GLOW_FRAG)},transparent:true,depthWrite:false,side:THREE.BackSide,blending:THREE.AdditiveBlending,uniforms:{{uHue:{{value:P.hue}}}}}});
 scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.55,32,32),glowMat));
