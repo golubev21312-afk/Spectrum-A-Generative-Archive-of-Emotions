@@ -117,6 +117,54 @@ async def init_db() -> None:
         await conn.execute("""
             ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR(160);
         """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS reactions (
+                id SERIAL PRIMARY KEY,
+                emotion_id INTEGER REFERENCES emotions(id) ON DELETE CASCADE,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                symbol VARCHAR(8) NOT NULL,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE (emotion_id, user_id)
+            );
+        """)
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_reactions_emotion_id ON reactions(emotion_id);
+        """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS messages (
+                id SERIAL PRIMARY KEY,
+                from_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                from_username VARCHAR(32) NOT NULL,
+                to_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                to_username VARCHAR(32) NOT NULL,
+                emotion_id INTEGER REFERENCES emotions(id) ON DELETE SET NULL,
+                read BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+        """)
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_messages_to_user_id ON messages(to_user_id, read);
+        """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS collections (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                username VARCHAR(32) NOT NULL,
+                title VARCHAR(80) NOT NULL,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+        """)
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_collections_user_id ON collections(user_id);
+        """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS collection_emotions (
+                collection_id INTEGER REFERENCES collections(id) ON DELETE CASCADE,
+                emotion_id INTEGER REFERENCES emotions(id) ON DELETE CASCADE,
+                added_at TIMESTAMPTZ DEFAULT NOW(),
+                PRIMARY KEY (collection_id, emotion_id)
+            );
+        """)
         # CHECK constraints (idempotent — silently skip if already exist)
         for stmt in [
             """DO $$ BEGIN

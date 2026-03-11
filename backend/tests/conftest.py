@@ -28,6 +28,7 @@ async def reset_db_pool():
         except Exception:
             pass
         database.pool = None
+    await database.init_db()
     yield
     if database.pool is not None:
         try:

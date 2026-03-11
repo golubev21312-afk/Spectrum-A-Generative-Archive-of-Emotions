@@ -46,6 +46,20 @@ class EmotionIn(BaseModel):
         return v
 
 
+ALLOWED_REACTIONS = {"🔥", "💧", "🌀", "🌑", "✨"}
+
+
+class ReactIn(BaseModel):
+    symbol: str
+
+    @field_validator("symbol")
+    @classmethod
+    def validate_symbol(cls, v: str) -> str:
+        if v not in ALLOWED_REACTIONS:
+            raise ValueError("unknown reaction symbol")
+        return v
+
+
 class EmotionOut(BaseModel):
     id: int
     parameters: dict
@@ -56,6 +70,8 @@ class EmotionOut(BaseModel):
     liked_by_me: bool = False
     thumbnail: Optional[str] = None
     views: int = 0
+    reactions: dict[str, int] = Field(default_factory=dict)
+    my_reaction: Optional[str] = None
 
 
 class EmotionFeed(BaseModel):
@@ -131,3 +147,40 @@ class EmotionCreatedOut(BaseModel):
 
 class UserListItem(BaseModel):
     username: str
+
+
+class CollectionIn(BaseModel):
+    title: str = Field(..., min_length=1, max_length=80)
+
+
+class CollectionOut(BaseModel):
+    id: int
+    username: str
+    title: str
+    emotion_count: int = 0
+    preview_hues: list[float] = Field(default_factory=list)
+    created_at: datetime
+
+
+class CollectionFull(BaseModel):
+    id: int
+    username: str
+    title: str
+    emotions: list[EmotionOut]
+    created_at: datetime
+
+
+class MessageIn(BaseModel):
+    to_username: str
+    emotion_id: int
+
+
+class MessageOut(BaseModel):
+    id: int
+    from_username: str
+    to_username: str
+    emotion_id: Optional[int] = None
+    emotion_type: Optional[str] = None
+    emotion_hue: Optional[float] = None
+    read: bool
+    created_at: datetime
