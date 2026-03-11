@@ -14,6 +14,8 @@ export interface EmotionResponse {
   liked_by_me: boolean;
   thumbnail?: string;
   views?: number;
+  reactions: Record<string, number>;
+  my_reaction?: string;
 }
 
 export interface EmotionFeed {
@@ -88,7 +90,9 @@ async function tryRefresh(): Promise<boolean> {
     });
     if (!res.ok) { saveRefreshToken(null); _clearAuth(); return false; }
     const data: AuthResponse = await res.json();
-    setAuth(data.token, data.user.username);
+    // Update tokens silently (no notify) to avoid re-rendering the current page
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("username", data.user.username);
     saveRefreshToken(data.refresh_token ?? null);
     return true;
   } catch {
@@ -227,6 +231,15 @@ export async function getFeed(params: {
   return res.json();
 }
 
+export async function reactEmotion(id: number, symbol: string): Promise<void> {
+  const res = await fetchWithRefresh(`${API_BASE}/emotions/${id}/react`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ symbol }),
+  });
+  if (!res.ok) throw new Error(`React failed: ${res.status}`);
+}
+
 export async function likeEmotion(id: number): Promise<void> {
   const res = await fetchWithRefresh(`${API_BASE}/emotions/${id}/like`, {
     method: "POST",
@@ -315,6 +328,101 @@ export async function getUnreadCount(): Promise<number> {
   } catch {
     return 0;
   }
+}
+
+export interface MessageResponse {
+  id: number;
+  from_username: string;
+  to_username: string;
+  emotion_id?: number;
+  emotion_type?: string;
+  emotion_hue?: number;
+  read: boolean;
+  created_at: string;
+}
+
+export interface CollectionResponse {
+  id: number;
+  username: string;
+  title: string;
+  emotion_count: number;
+  preview_hues: number[];
+  created_at: string;
+}
+
+export interface CollectionFull {
+  id: number;
+  username: string;
+  title: string;
+  emotions: EmotionResponse[];
+  created_at: string;
+}
+
+export async function createCollection(title: string): Promise<CollectionResponse> {
+  const res = await fetchWithRefresh(`${API_BASE}/collections`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ title }),
+  });
+  if (!res.ok) throw new Error(`Create collection failed: ${res.status}`);
+  return res.json();
+}
+
+export async function getCollections(username: string): Promise<CollectionResponse[]> {
+  const res = await fetch(`${API_BASE}/collections?username=${encodeURIComponent(username)}`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function getCollection(id: number): Promise<CollectionFull> {
+  const res = await fetchWithRefresh(`${API_BASE}/collections/${id}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Get collection failed: ${res.status}`);
+  return res.json();
+}
+
+export async function addToCollection(collectionId: number, emotionId: number): Promise<void> {
+  const res = await fetchWithRefresh(`${API_BASE}/collections/${collectionId}/add`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ emotion_id: emotionId }),
+  });
+  if (!res.ok) throw new Error(`Add to collection failed: ${res.status}`);
+}
+
+export async function removeFromCollection(collectionId: number, emotionId: number): Promise<void> {
+  const res = await fetchWithRefresh(`${API_BASE}/collections/${collectionId}/emotions/${emotionId}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`Remove from collection failed: ${res.status}`);
+}
+
+export async function sendMessage(to_username: string, emotion_id: number): Promise<MessageResponse> {
+  const res = await fetchWithRefresh(`${API_BASE}/messages`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ to_username, emotion_id }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Send failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function getInbox(): Promise<MessageResponse[]> {
+  const res = await fetchWithRefresh(`${API_BASE}/messages/inbox`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`Inbox failed: ${res.status}`);
+  return res.json();
+}
+
+export async function markMessageRead(id: number): Promise<void> {
+  await fetchWithRefresh(`${API_BASE}/messages/${id}/read`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
 }
 
 export async function getFollowers(username: string): Promise<{ username: string }[]> {

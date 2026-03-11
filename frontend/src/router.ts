@@ -4,6 +4,8 @@ export type Route =
   | { name: "feed" }
   | { name: "auth" }
   | { name: "notifications" }
+  | { name: "messages" }
+  | { name: "collection"; id: number }
   | { name: "emotion"; id: number }
   | { name: "profile"; username: string };
 
@@ -14,6 +16,13 @@ export function parseRoute(hash: string): Route {
   if (h === "#/feed") return { name: "feed" };
   if (h === "#/auth") return { name: "auth" };
   if (h === "#/notifications") return { name: "notifications" };
+  if (h === "#/messages") return { name: "messages" };
+
+  if (h.startsWith("#/collection/")) {
+    const id = parseInt(h.slice("#/collection/".length), 10);
+    if (!isNaN(id) && id > 0) return { name: "collection", id };
+    return { name: "feed" };
+  }
 
   if (h.startsWith("#/emotion/")) {
     const raw = h.slice("#/emotion/".length);

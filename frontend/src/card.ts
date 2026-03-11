@@ -1,4 +1,4 @@
-import { likeEmotion, unlikeEmotion, isLoggedIn, EmotionResponse } from "./api";
+import { likeEmotion, unlikeEmotion, reactEmotion, isLoggedIn, EmotionResponse } from "./api";
 import { t } from "./i18n";
 import { createAvatarCanvas } from "./avatar";
 
@@ -108,10 +108,81 @@ export function createCard(
 
   likeRow.appendChild(likeBtn);
   likeRow.appendChild(likeCount);
+
+  // Reactions bar
+  const reactBar = createReactBar(emotion.id, emotion.reactions ?? {}, emotion.my_reaction);
   info.appendChild(emotionLabel);
   info.appendChild(meta);
   info.appendChild(likeRow);
+  info.appendChild(reactBar);
   card.appendChild(preview);
   card.appendChild(info);
   return card;
+}
+
+const REACTION_SYMBOLS = ["🔥", "💧", "🌀", "🌑", "✨"];
+
+export function createReactBar(
+  emotionId: number,
+  reactions: Record<string, number>,
+  myReaction?: string,
+): HTMLElement {
+  const bar = document.createElement("div");
+  bar.className = "react-bar";
+
+  const counts = { ...reactions };
+  let mine = myReaction ?? null;
+
+  REACTION_SYMBOLS.forEach(sym => {
+    const btn = document.createElement("button");
+    btn.className = `react-btn${mine === sym ? " active" : ""}`;
+    const renderBtn = () => {
+      const c = counts[sym] ?? 0;
+      btn.textContent = c > 0 ? `${sym} ${c}` : sym;
+      btn.classList.toggle("active", mine === sym);
+    };
+    renderBtn();
+
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!isLoggedIn()) {
+        btn.classList.add("shake");
+        setTimeout(() => btn.classList.remove("shake"), 400);
+        return;
+      }
+      const prev = mine;
+      // Optimistic update
+      if (prev) counts[prev] = Math.max(0, (counts[prev] ?? 1) - 1);
+      if (prev === sym) {
+        mine = null;
+      } else {
+        counts[sym] = (counts[sym] ?? 0) + 1;
+        mine = sym;
+      }
+      bar.querySelectorAll<HTMLButtonElement>(".react-btn").forEach((b, i) => {
+        const s = REACTION_SYMBOLS[i];
+        const c = counts[s] ?? 0;
+        b.textContent = c > 0 ? `${s} ${c}` : s;
+        b.classList.toggle("active", mine === s);
+      });
+      try {
+        await reactEmotion(emotionId, sym);
+      } catch {
+        // Rollback
+        if (prev) counts[prev] = (counts[prev] ?? 0) + 1;
+        if (prev === sym) mine = prev;
+        else { counts[sym] = Math.max(0, (counts[sym] ?? 1) - 1); mine = prev; }
+        bar.querySelectorAll<HTMLButtonElement>(".react-btn").forEach((b, i) => {
+          const s = REACTION_SYMBOLS[i];
+          const c = counts[s] ?? 0;
+          b.textContent = c > 0 ? `${s} ${c}` : s;
+          b.classList.toggle("active", mine === s);
+        });
+      }
+    });
+
+    bar.appendChild(btn);
+  });
+
+  return bar;
 }

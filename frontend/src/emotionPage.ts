@@ -1,5 +1,7 @@
 import { CubeScene, CubeParams } from "./cube";
-import { getEmotion, likeEmotion, unlikeEmotion, isLoggedIn, deleteEmotion, updateEmotionType } from "./api";
+import { getEmotion, likeEmotion, unlikeEmotion, isLoggedIn, deleteEmotion, updateEmotionType,
+         getCollections, createCollection, addToCollection } from "./api";
+import { createReactBar } from "./card";
 import { AmbientAudio } from "./audio";
 import { t, detectEmotion } from "./i18n";
 import { mountComments } from "./comments";
@@ -88,6 +90,10 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
     muteBtn.classList.toggle("muted", muted);
   });
 
+  const embedBtn = document.createElement("button");
+  embedBtn.className = "action-btn";
+  embedBtn.textContent = t("embed");
+
   const shareBtn = document.createElement("button");
   shareBtn.className = "action-btn screenshot-btn";
   shareBtn.textContent = t("share");
@@ -97,11 +103,22 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
   deleteBtn.textContent = t("deleteEmotion");
   deleteBtn.style.display = "none";
 
+  // Add to collection button (shown only when logged in, after emotion loads)
+  const collectBtn = document.createElement("button");
+  collectBtn.className = "action-btn collect-btn";
+  collectBtn.textContent = t("addToCollection");
+  collectBtn.style.display = "none";
+
   likeRow.appendChild(likeBtn);
   likeRow.appendChild(cloneBtn);
+  likeRow.appendChild(embedBtn);
   likeRow.appendChild(shareBtn);
+  likeRow.appendChild(collectBtn);
   likeRow.appendChild(muteBtn);
   likeRow.appendChild(deleteBtn);
+
+  const reactBarWrap = document.createElement("div");
+  reactBarWrap.className = "emotion-page-react-bar";
 
   overlay.appendChild(backBtn);
   overlay.appendChild(authorTag);
@@ -109,14 +126,23 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
   overlay.appendChild(info);
   overlay.appendChild(viewsTag);
   overlay.appendChild(likeRow);
+  overlay.appendChild(reactBarWrap);
   app.appendChild(overlay);
 
   shareBtn.addEventListener("click", () => {
-    // Share the backend /share/:id URL — it has OG meta tags and redirects to the SPA
     const shareUrl = `http://localhost:8000/share/${id}`;
     navigator.clipboard.writeText(shareUrl).then(() => {
       shareBtn.textContent = t("copied");
       setTimeout(() => { shareBtn.textContent = t("share"); }, 2000);
+    });
+  });
+
+  embedBtn.addEventListener("click", () => {
+    const widgetUrl = `http://localhost:8000/widget/${id}`;
+    const iframe = `<iframe src="${widgetUrl}" width="400" height="400" frameborder="0" style="border-radius:12px;overflow:hidden" allowtransparency="true"></iframe>`;
+    navigator.clipboard.writeText(iframe).then(() => {
+      embedBtn.textContent = t("embedCopied");
+      setTimeout(() => { embedBtn.textContent = t("embed"); }, 2000);
     });
   });
 
@@ -170,6 +196,15 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
     liked = emotion.liked_by_me;
     likesCount = emotion.likes_count;
     updateLikeBtn();
+
+    const reactBar = createReactBar(id, emotion.reactions ?? {}, emotion.my_reaction);
+    reactBarWrap.appendChild(reactBar);
+
+    // Show collect button for logged-in users
+    if (isLoggedIn()) {
+      collectBtn.style.display = "";
+      collectBtn.addEventListener("click", () => openCollectDropdown(collectBtn, id));
+    }
 
     if ((emotion.views ?? 0) > 0) {
       viewsTag.textContent = `${emotion.views} ${t("views")}`;
@@ -227,4 +262,85 @@ export function mountEmotionPage(app: HTMLElement, id: number) {
     commentsPanel.remove();
     document.documentElement.style.removeProperty("--accent");
   };
+}
+
+function openCollectDropdown(anchor: HTMLElement, emotionId: number) {
+  // Remove existing dropdown if any
+  document.querySelector(".collect-dropdown")?.remove();
+
+  const dropdown = document.createElement("div");
+  dropdown.className = "collect-dropdown";
+  dropdown.innerHTML = `<div class="collect-dropdown-loading">${t("loading")}</div>`;
+
+  const rect = anchor.getBoundingClientRect();
+  dropdown.style.top = `${rect.bottom + 6}px`;
+  dropdown.style.left = `${rect.left}px`;
+  document.body.appendChild(dropdown);
+
+  const closeOnOutside = (e: MouseEvent) => {
+    if (!dropdown.contains(e.target as Node) && e.target !== anchor) {
+      dropdown.remove();
+      document.removeEventListener("click", closeOnOutside);
+    }
+  };
+  setTimeout(() => document.addEventListener("click", closeOnOutside), 10);
+
+  const { getUsername } = (window as any).__spectrumState || {};
+  const myUsername = localStorage.getItem("username") || "";
+
+  getCollections(myUsername).then(colls => {
+    dropdown.innerHTML = "";
+
+    // Create new collection input
+    const newRow = document.createElement("div");
+    newRow.className = "collect-new-row";
+    const input = document.createElement("input");
+    input.className = "collect-new-input";
+    input.placeholder = t("collectionTitle");
+    input.maxLength = 80;
+    const createBtn = document.createElement("button");
+    createBtn.className = "action-btn collect-create-btn";
+    createBtn.textContent = t("createAndAdd");
+    createBtn.addEventListener("click", async () => {
+      const title = input.value.trim();
+      if (!title) return;
+      createBtn.disabled = true;
+      try {
+        const coll = await createCollection(title);
+        await addToCollection(coll.id, emotionId);
+        anchor.textContent = t("addedToCollection");
+        dropdown.remove();
+      } catch {
+        createBtn.disabled = false;
+      }
+    });
+    newRow.appendChild(input);
+    newRow.appendChild(createBtn);
+    dropdown.appendChild(newRow);
+
+    if (colls.length) {
+      const divider = document.createElement("div");
+      divider.className = "collect-divider";
+      dropdown.appendChild(divider);
+
+      colls.forEach(coll => {
+        const item = document.createElement("button");
+        item.className = "collect-item";
+        item.textContent = `${coll.title} (${coll.emotion_count})`;
+        item.addEventListener("click", async () => {
+          item.disabled = true;
+          try {
+            await addToCollection(coll.id, emotionId);
+            anchor.textContent = t("addedToCollection");
+            dropdown.remove();
+          } catch {
+            item.disabled = false;
+          }
+        });
+        dropdown.appendChild(item);
+      });
+    }
+  }).catch(() => {
+    dropdown.innerHTML = `<div class="collect-dropdown-loading">${t("notFound")}</div>`;
+  });
 }

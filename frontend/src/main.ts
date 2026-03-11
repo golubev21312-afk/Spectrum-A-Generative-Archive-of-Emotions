@@ -4,8 +4,10 @@ import { mountFeed } from "./feed";
 import { mountEmotionPage } from "./emotionPage";
 import { mountProfile } from "./profile";
 import { mountNotifications } from "./notifications";
+import { mountMessages } from "./messages";
+import { mountCollection } from "./collections";
 import { t, getLang, setLang, Lang } from "./i18n";
-import { login, register, getUnreadCount } from "./api";
+import { login, register, getUnreadCount, getInbox } from "./api";
 import { isLoggedIn, getUsername, clearAuth, onAuthChange } from "./state";
 import { initTheme, toggleTheme, getTheme } from "./theme";
 import { parseRoute } from "./router";
@@ -64,6 +66,24 @@ function createNav(): HTMLElement {
         bell.appendChild(badge);
       }
     });
+
+    // Messages envelope
+    const envelope = document.createElement("a");
+    envelope.href = "#/messages";
+    envelope.className = "nav-bell";
+    envelope.textContent = "✉";
+    nav.appendChild(envelope);
+
+    // Fetch unread messages count
+    getInbox().then(items => {
+      const unread = items.filter(m => !m.read).length;
+      if (unread > 0) {
+        const badge = document.createElement("span");
+        badge.className = "nav-bell-badge";
+        badge.textContent = unread > 9 ? "9+" : String(unread);
+        envelope.appendChild(badge);
+      }
+    }).catch(() => {});
 
     const userLink = document.createElement("a");
     userLink.href = `#/profile/${username}`;
@@ -217,6 +237,8 @@ function route() {
     case "emotion":       cleanup = mountEmotionPage(app, route.id) || null; break;
     case "profile":       cleanup = mountProfile(app, route.username) || null; break;
     case "notifications": cleanup = mountNotifications(app) || null; break;
+    case "messages":      mountMessages(app); break;
+    case "collection":    mountCollection(app, route.id); break;
     case "auth":          mountAuth(app); break;
     default:              cleanup = mountCreator(app) || null;
   }
