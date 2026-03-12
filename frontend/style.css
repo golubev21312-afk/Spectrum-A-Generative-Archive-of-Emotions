@@ -2649,3 +2649,49 @@ html[data-theme="light"] .skeleton-line { background: #ede9e5; }
     width: 11px; height: 11px;
   }
 }
+
+/* 13. Wordmark — логотип Spectrum на страницах */
+.wordmark { display: none; }
+html[data-theme="light"] .wordmark {
+  display: block;
+  position: fixed;
+  top: 18px;
+  left: 24px;
+  z-index: 90;
+  pointer-events: auto;
+}
+html[data-theme="light"] .wordmark-link {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-style: italic;
+  font-weight: 400;
+  color: #1a1612;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  opacity: 0.75;
+  transition: opacity 0.18s;
+}
+html[data-theme="light"] .wordmark-link:hover { opacity: 1; }
+
+/* 14. Responsive-сетка ленты (явные брейкпоинты) */
+@media (max-width: 600px) {
+  html[data-theme="light"] .feed-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  html[data-theme="light"] .feed-card-preview,
+  html[data-theme="light"] .feed-card-preview-img { height: 140px; }
+  html[data-theme="light"] .feed-card-emotion { font-size: 15px; }
+}
+@media (min-width: 601px) and (max-width: 960px) {
+  html[data-theme="light"] .feed-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}
+@media (min-width: 961px) {
+  html[data-theme="light"] .feed-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+  }
+}

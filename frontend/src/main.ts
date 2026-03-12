@@ -137,6 +137,16 @@ function createNav(): HTMLElement {
   return nav;
 }
 
+function createWordmark(): HTMLElement {
+  const r = parseRoute(location.hash);
+  // На странице создания куб занимает весь фон — логотип не нужен
+  if (r.name === "create" || r.name === "view") return document.createDocumentFragment() as unknown as HTMLElement;
+  const mark = document.createElement("div");
+  mark.className = "wordmark";
+  mark.innerHTML = `<a href="#/feed" class="wordmark-link">Spectrum</a>`;
+  return mark;
+}
+
 function mountAuth(app: HTMLElement) {
   const container = document.createElement("div");
   container.className = "auth-container";
@@ -230,6 +240,7 @@ function route() {
   app.classList.add("page-enter");
   app.appendChild(createNav());
   app.appendChild(createMobileNav());
+  app.appendChild(createWordmark());
 
   const route = parseRoute(location.hash);
 
@@ -250,19 +261,25 @@ function createMobileNav(): HTMLElement {
   const bar = document.createElement("nav");
   bar.className = "mobile-nav";
 
-  const tabs = [
-    { href: "#/create",        icon: "✦", labelKey: "create" as const },
-    { href: "#/feed",          icon: "◈", labelKey: "feed" as const },
-    { href: "#/notifications", icon: "🔔", labelKey: "notifications" as const },
-  ] as const;
-
   const hash = location.hash || "#/create";
 
-  tabs.forEach(({ href, icon, labelKey }) => {
+  type TabDef = { href: string; icon: string; label: string; match?: string };
+  const tabs: TabDef[] = [
+    { href: "#/create", icon: "✦", label: t("create") },
+    { href: "#/feed",   icon: "◈", label: t("feed") },
+  ];
+
+  if (isLoggedIn()) {
+    tabs.push({ href: "#/messages",      icon: "✉", label: t("messages"), match: "#/messages" });
+    tabs.push({ href: "#/notifications", icon: "🔔", label: t("notifications"), match: "#/notifications" });
+  }
+
+  tabs.forEach(({ href, icon, label, match }) => {
     const a = document.createElement("a");
     a.href = href;
-    a.className = `mobile-nav-tab${hash.startsWith(href) ? " active" : ""}`;
-    a.innerHTML = `<span class="mobile-nav-icon">${icon}</span><span class="mobile-nav-label">${t(labelKey)}</span>`;
+    const active = match ? hash.startsWith(match) : hash.startsWith(href);
+    a.className = `mobile-nav-tab${active ? " active" : ""}`;
+    a.innerHTML = `<span class="mobile-nav-icon">${icon}</span><span class="mobile-nav-label">${label}</span>`;
     bar.appendChild(a);
   });
 
