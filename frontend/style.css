@@ -2431,10 +2431,16 @@ html[data-theme="light"] .zodiac-btn--active {
 html[data-theme="light"] .nav { display: none; }
 html[data-theme="light"] .mobile-nav {
   display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 64px;
   background: #ffffff;
   border-top: 1px solid #e8e4df;
   box-shadow: 0 -2px 16px rgba(0,0,0,0.06);
-  height: 64px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 html[data-theme="light"] .mobile-nav-tab {
   color: rgba(26, 22, 18, 0.35);
@@ -2449,19 +2455,39 @@ html[data-theme="light"] .mobile-nav-tab:hover {
 }
 html[data-theme="light"] .mobile-nav-icon { font-size: 20px; }
 
-/* 2. Убрать верхний отступ на страницах (nav сверху убрали) */
+/* 2. Отступы страниц: сверху под wordmark, снизу под нижний nav */
 html[data-theme="light"] .feed-wrap {
-  padding-top: 24px;
+  padding-top: 56px;
   padding-bottom: calc(64px + 24px);
 }
 html[data-theme="light"] .profile-wrap,
 html[data-theme="light"] .notif-wrap,
 html[data-theme="light"] .messages-wrap,
 html[data-theme="light"] .collection-wrap {
-  padding-top: 24px;
+  padding-top: 56px;
   padding-bottom: calc(64px + 24px);
 }
-html[data-theme="light"] .page-hint { top: 16px; }
+html[data-theme="light"] .messages-heading { color: #c4614a; }
+html[data-theme="light"] .message-row {
+  background: #ffffff;
+  border-color: #e8e4df;
+}
+html[data-theme="light"] .message-row:hover { background: #f5f2ef; }
+html[data-theme="light"] .message-row.unread {
+  background: #fdf6f4;
+  border-color: rgba(196,97,74,0.2);
+}
+html[data-theme="light"] .message-sender { color: #1a1612; }
+html[data-theme="light"] .message-dot,
+html[data-theme="light"] .message-date { color: rgba(26,22,18,0.45); }
+html[data-theme="light"] .message-emotion-label { color: #c4614a; }
+html[data-theme="light"] .page-hint {
+  top: 18px;
+  left: 160px;
+  transform: none;
+  font-size: 12px;
+  color: rgba(26, 22, 18, 0.35);
+}
 
 /* 3. Панель управления — левая сторона, чистый белый */
 html[data-theme="light"] .controls {
@@ -2559,7 +2585,11 @@ html[data-theme="light"] .feed-card {
   to   { opacity: 1; transform: translateX(0); }
 }
 html[data-theme="light"] #app.page-enter {
-  animation: pageSlideIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: lightPageFade 0.22s ease forwards;
+}
+@keyframes lightPageFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* 8. Auth форма */

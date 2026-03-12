@@ -5,12 +5,12 @@ import { createAvatarCanvas } from "./avatar";
 export function emotionPreviewStyle(params: Record<string, unknown>): string {
   const h = Number(params.hue ?? 160);
   const tr = Number(params.transparency ?? 0.3);
-  const l1 = Math.round(15 + (1 - tr) * 20);
-  const l2 = Math.round(30 + (1 - tr) * 25);
+  const l1 = Math.round(42 + (1 - tr) * 18);
+  const l2 = Math.round(55 + (1 - tr) * 15);
   return `background: linear-gradient(135deg,
-    hsl(${h},70%,${l1}%) 0%,
-    hsl(${(h + 40) % 360},80%,${l2}%) 50%,
-    hsl(${(h + 80) % 360},60%,${l1}%) 100%);`;
+    hsl(${h},62%,${l1}%) 0%,
+    hsl(${(h + 40) % 360},72%,${l2}%) 50%,
+    hsl(${(h + 80) % 360},55%,${l1}%) 100%);`;
 }
 
 export function createCard(
@@ -31,6 +31,26 @@ export function createCard(
     img.src = emotion.thumbnail;
     img.loading = "lazy";
     img.alt = emotion.emotion_type || "";
+    const replaceWithGradient = () => {
+      const div = document.createElement("div");
+      div.className = "feed-card-preview";
+      div.setAttribute("style", emotionPreviewStyle(emotion.parameters));
+      div.addEventListener("click", () => { location.hash = `#/emotion/${emotion.id}`; });
+      img.replaceWith(div);
+    };
+    img.onerror = replaceWithGradient;
+    img.onload = () => {
+      try {
+        const c = document.createElement("canvas");
+        c.width = 4; c.height = 4;
+        const ctx = c.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, 4, 4);
+        const d = ctx.getImageData(0, 0, 4, 4).data;
+        let sum = 0;
+        for (let i = 0; i < d.length; i += 4) sum += d[i] + d[i+1] + d[i+2];
+        if (sum < 80) replaceWithGradient();
+      } catch { /* cross-origin, keep img */ }
+    };
     preview = img;
   } else {
     preview = document.createElement("div");
