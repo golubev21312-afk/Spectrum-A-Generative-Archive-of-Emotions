@@ -2,7 +2,7 @@ const STORAGE_KEY = "spectrum_theme";
 export type Theme = "dark" | "light";
 
 export function getTheme(): Theme {
-  return (localStorage.getItem(STORAGE_KEY) as Theme) || "dark";
+  return (localStorage.getItem(STORAGE_KEY) as Theme) || "light";
 }
 
 export function setTheme(theme: Theme): void {

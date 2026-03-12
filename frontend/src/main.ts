@@ -11,8 +11,10 @@ import { login, register, getUnreadCount, getInbox } from "./api";
 import { isLoggedIn, getUsername, clearAuth, onAuthChange } from "./state";
 import { initTheme, toggleTheme, getTheme } from "./theme";
 import { parseRoute } from "./router";
+import { initCursor } from "./cursor";
 
 initTheme();
+initCursor();
 
 const app = document.getElementById("app")!;
 

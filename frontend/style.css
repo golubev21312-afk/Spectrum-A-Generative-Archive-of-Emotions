@@ -2054,10 +2054,18 @@ canvas.feed-card-avatar {
 
 /* ── 7.4 Light theme ────────────────────────────────────────── */
 [data-theme="light"] {
-  --bg: #eeeef4;
-  --accent: #007a55;
-  --panel-bg: rgba(255, 255, 255, 0.82);
-  --text: #1a1a2e;
+  --bg: #faf9f7;
+  --accent: #c4614a;
+  --accent-hover: #a84f3a;
+  --accent-light: rgba(196, 97, 74, 0.08);
+  --panel-bg: #ffffff;
+  --text: #1a1612;
+  --text-muted: rgba(26, 22, 18, 0.5);
+  --border: #e8e4df;
+  --font-heading: 'Playfair Display', Georgia, serif;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 16px 40px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.05);
 }
 html[data-theme="light"],
 html[data-theme="light"] body {
@@ -2076,7 +2084,7 @@ html[data-theme="light"] .nav {
 }
 html[data-theme="light"] .nav a {
   border-color: rgba(0, 0, 0, 0.12);
-  color: rgba(26, 26, 46, 0.75);
+  color: rgba(26, 22, 18, 0.75);
 }
 html[data-theme="light"] .nav a:hover,
 html[data-theme="light"] .nav a.active {
@@ -2086,7 +2094,7 @@ html[data-theme="light"] .nav a.active {
 html[data-theme="light"] .lang-btn,
 html[data-theme="light"] .theme-btn {
   border-color: rgba(0, 0, 0, 0.12);
-  color: rgba(26, 26, 46, 0.7);
+  color: rgba(26, 22, 18, 0.7);
   background: rgba(255,255,255,0.6);
 }
 html[data-theme="light"] .lang-btn:hover,
@@ -2098,12 +2106,12 @@ html[data-theme="light"] .nav-user {
   color: var(--accent);
 }
 html[data-theme="light"] .nav-bell {
-  color: rgba(26, 26, 46, 0.6);
+  color: rgba(26, 22, 18, 0.6);
 }
 
 /* Page hint */
 html[data-theme="light"] .page-hint {
-  color: rgba(26, 26, 46, 0.35);
+  color: rgba(26, 22, 18, 0.35);
 }
 
 /* Controls panel */
@@ -2115,15 +2123,15 @@ html[data-theme="light"] .controls h2 {
   color: var(--accent);
 }
 html[data-theme="light"] .slider-group label {
-  color: rgba(26, 26, 46, 0.6);
+  color: rgba(26, 22, 18, 0.6);
 }
 html[data-theme="light"] input[type="range"] {
   background: rgba(0, 0, 0, 0.12);
 }
 html[data-theme="light"] .emotion-label {
   color: var(--accent);
-  border-color: rgba(0, 122, 85, 0.25);
-  background: rgba(0, 122, 85, 0.06);
+  border-color: rgba(196, 97, 74, 0.25);
+  background: rgba(196, 97, 74, 0.06);
 }
 
 /* Auth form */
@@ -2137,18 +2145,18 @@ html[data-theme="light"] .auth-title {
 html[data-theme="light"] .auth-input {
   border-color: rgba(0, 0, 0, 0.18);
   background: rgba(255, 255, 255, 0.9);
-  color: #1a1a2e;
+  color: #1a1612;
 }
 html[data-theme="light"] .auth-input:focus {
   border-color: var(--accent);
   background: #fff;
 }
 html[data-theme="light"] .auth-input::placeholder {
-  color: rgba(26, 26, 46, 0.38);
+  color: rgba(26, 22, 18, 0.38);
 }
 html[data-theme="light"] .auth-register-btn {
   border-color: rgba(0, 0, 0, 0.15);
-  color: rgba(26, 26, 46, 0.65);
+  color: rgba(26, 22, 18, 0.65);
   background: transparent;
 }
 html[data-theme="light"] .auth-register-btn:hover {
@@ -2158,13 +2166,13 @@ html[data-theme="light"] .auth-register-btn:hover {
 
 /* Action buttons */
 html[data-theme="light"] .action-btn {
-  border-color: rgba(0, 122, 85, 0.45);
+  border-color: rgba(196, 97, 74, 0.45);
   color: var(--accent);
-  background: rgba(0, 122, 85, 0.05);
+  background: rgba(196, 97, 74, 0.05);
 }
 html[data-theme="light"] .action-btn:hover {
-  background: rgba(0, 122, 85, 0.1);
-  box-shadow: 0 0 20px rgba(0, 122, 85, 0.12);
+  background: rgba(196, 97, 74, 0.1);
+  box-shadow: 0 0 20px rgba(196, 97, 74, 0.12);
 }
 
 /* Feed */
@@ -2175,42 +2183,42 @@ html[data-theme="light"] .feed-card {
 }
 html[data-theme="light"] .feed-card:hover {
   box-shadow: 0 8px 28px rgba(0,0,0,0.1);
-  border-color: rgba(0, 122, 85, 0.2);
+  border-color: rgba(196, 97, 74, 0.2);
 }
 html[data-theme="light"] .feed-card-emotion {
   color: var(--accent);
 }
 html[data-theme="light"] .feed-card-meta {
-  color: rgba(26, 26, 46, 0.45);
+  color: rgba(26, 22, 18, 0.45);
 }
 html[data-theme="light"] .feed-card-author {
-  color: rgba(26, 26, 46, 0.55);
+  color: rgba(26, 22, 18, 0.55);
 }
 html[data-theme="light"] .feed-card-author:hover {
   color: var(--accent);
 }
 html[data-theme="light"] .feed-like-btn {
-  color: rgba(26, 26, 46, 0.35);
+  color: rgba(26, 22, 18, 0.35);
 }
 html[data-theme="light"] .like-count {
-  color: rgba(26, 26, 46, 0.4);
+  color: rgba(26, 22, 18, 0.4);
 }
 html[data-theme="light"] .feed-sort-btn {
   border-color: rgba(0, 0, 0, 0.12);
-  color: rgba(26, 26, 46, 0.6);
+  color: rgba(26, 22, 18, 0.6);
   background: rgba(255,255,255,0.7);
 }
 html[data-theme="light"] .feed-sort-btn.active {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(0, 122, 85, 0.06);
+  background: rgba(196, 97, 74, 0.06);
 }
 html[data-theme="light"] .feed-type-select,
 html[data-theme="light"] .feed-author-input,
 html[data-theme="light"] .feed-search-input {
   border-color: rgba(0, 0, 0, 0.15);
   background: rgba(255,255,255,0.85);
-  color: #1a1a2e;
+  color: #1a1612;
 }
 html[data-theme="light"] .feed-type-select:focus,
 html[data-theme="light"] .feed-author-input:focus,
@@ -2218,31 +2226,31 @@ html[data-theme="light"] .feed-search-input:focus {
   border-color: var(--accent);
 }
 html[data-theme="light"] .feed-hint {
-  color: rgba(26, 26, 46, 0.35);
+  color: rgba(26, 22, 18, 0.35);
 }
 html[data-theme="light"] .feed-empty-glyph {
-  color: rgba(0, 122, 85, 0.25);
+  color: rgba(196, 97, 74, 0.25);
 }
 html[data-theme="light"] .feed-empty-title {
-  color: rgba(26, 26, 46, 0.5);
+  color: rgba(26, 22, 18, 0.5);
 }
 html[data-theme="light"] .feed-empty-sub {
-  color: rgba(26, 26, 46, 0.3);
+  color: rgba(26, 22, 18, 0.3);
 }
 
 /* Today's top */
 html[data-theme="light"] .feed-today-title {
-  color: rgba(26, 26, 46, 0.45);
+  color: rgba(26, 22, 18, 0.45);
 }
 html[data-theme="light"] .today-card {
   background: rgba(255,255,255,0.7);
   border-color: rgba(0,0,0,0.08);
 }
 html[data-theme="light"] .today-card-title {
-  color: rgba(26, 26, 46, 0.85);
+  color: rgba(26, 22, 18, 0.85);
 }
 html[data-theme="light"] .today-card-meta {
-  color: rgba(26, 26, 46, 0.45);
+  color: rgba(26, 22, 18, 0.45);
 }
 
 /* Viewer overlay – always on top of dark 3D canvas, keep text light */
@@ -2263,34 +2271,34 @@ html[data-theme="light"] .notif-item {
   background: rgba(255,255,255,0.7);
 }
 html[data-theme="light"] .notif-item.unread {
-  background: rgba(0, 122, 85, 0.05);
-  border-color: rgba(0, 122, 85, 0.15);
+  background: rgba(196, 97, 74, 0.05);
+  border-color: rgba(196, 97, 74, 0.15);
 }
 html[data-theme="light"] .notif-text {
-  color: rgba(26, 26, 46, 0.7);
+  color: rgba(26, 22, 18, 0.7);
 }
 html[data-theme="light"] .notif-time {
-  color: rgba(26, 26, 46, 0.38);
+  color: rgba(26, 22, 18, 0.38);
 }
 
 /* Profile */
 html[data-theme="light"] .profile-stat-value {
-  color: #1a1a2e;
+  color: #1a1612;
 }
 html[data-theme="light"] .profile-stat-label {
-  color: rgba(26, 26, 46, 0.45);
+  color: rgba(26, 22, 18, 0.45);
 }
 html[data-theme="light"] .profile-bio {
-  color: rgba(26, 26, 46, 0.65);
+  color: rgba(26, 22, 18, 0.65);
 }
 html[data-theme="light"] .profile-bio-input {
   border-color: rgba(0,0,0,0.15);
   background: rgba(255,255,255,0.9);
-  color: #1a1a2e;
+  color: #1a1612;
 }
 html[data-theme="light"] .profile-tab {
   border-color: rgba(0,0,0,0.12);
-  color: rgba(26, 26, 46, 0.6);
+  color: rgba(26, 22, 18, 0.6);
 }
 html[data-theme="light"] .profile-tab.active {
   border-color: var(--accent);
@@ -2301,19 +2309,19 @@ html[data-theme="light"] .profile-tab.active {
 html[data-theme="light"] .comments-input {
   border-color: rgba(0,0,0,0.15);
   background: rgba(255,255,255,0.85);
-  color: #1a1a2e;
+  color: #1a1612;
 }
 html[data-theme="light"] .comments-input::placeholder {
-  color: rgba(26, 26, 46, 0.35);
+  color: rgba(26, 22, 18, 0.35);
 }
 html[data-theme="light"] .comment-author {
-  color: rgba(26, 26, 46, 0.7);
+  color: rgba(26, 22, 18, 0.7);
 }
 html[data-theme="light"] .comment-text {
-  color: rgba(26, 26, 46, 0.75);
+  color: rgba(26, 22, 18, 0.75);
 }
 html[data-theme="light"] .comment-time {
-  color: rgba(26, 26, 46, 0.35);
+  color: rgba(26, 22, 18, 0.35);
 }
 html[data-theme="light"] .comment-item {
   border-color: rgba(0,0,0,0.06);
@@ -2403,14 +2411,241 @@ html[data-theme="light"] .skeleton-line {
 html[data-theme="light"] .zodiac-btn {
   background: rgba(0,0,0,0.04);
   border-color: rgba(0,0,0,0.10);
-  color: #1a1a2e;
+  color: #1a1612;
 }
 html[data-theme="light"] .zodiac-btn:hover {
-  border-color: rgba(0,180,120,0.5);
-  background: rgba(0,180,120,0.08);
+  border-color: rgba(196, 97, 74, 0.45);
+  background: rgba(196, 97, 74, 0.06);
 }
 html[data-theme="light"] .zodiac-btn--active {
-  border-color: #009966 !important;
-  background: rgba(0,153,102,0.12) !important;
-  color: #007a52;
+  border-color: #c4614a !important;
+  background: rgba(196, 97, 74, 0.10) !important;
+  color: #c4614a;
+}
+
+/* ═══════════════════════════════════════════════════════
+   REDESIGN 2026 — Галерея, Терракота, Playfair
+   ═══════════════════════════════════════════════════════ */
+
+/* 1. Скрыть верхний nav, показать нижний везде */
+html[data-theme="light"] .nav { display: none; }
+html[data-theme="light"] .mobile-nav {
+  display: flex;
+  background: #ffffff;
+  border-top: 1px solid #e8e4df;
+  box-shadow: 0 -2px 16px rgba(0,0,0,0.06);
+  height: 64px;
+}
+html[data-theme="light"] .mobile-nav-tab {
+  color: rgba(26, 22, 18, 0.35);
+  font-family: var(--font);
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  padding: 10px 0;
+}
+html[data-theme="light"] .mobile-nav-tab.active,
+html[data-theme="light"] .mobile-nav-tab:hover {
+  color: #c4614a;
+}
+html[data-theme="light"] .mobile-nav-icon { font-size: 20px; }
+
+/* 2. Убрать верхний отступ на страницах (nav сверху убрали) */
+html[data-theme="light"] .feed-wrap {
+  padding-top: 24px;
+  padding-bottom: calc(64px + 24px);
+}
+html[data-theme="light"] .profile-wrap,
+html[data-theme="light"] .notif-wrap,
+html[data-theme="light"] .messages-wrap,
+html[data-theme="light"] .collection-wrap {
+  padding-top: 24px;
+  padding-bottom: calc(64px + 24px);
+}
+html[data-theme="light"] .page-hint { top: 16px; }
+
+/* 3. Панель управления — левая сторона, чистый белый */
+html[data-theme="light"] .controls {
+  right: auto;
+  left: 20px;
+  top: 20px;
+  bottom: calc(64px + 20px);
+  transform: none;
+  max-height: calc(100vh - 64px - 40px);
+  background: #ffffff;
+  border: 1px solid #e8e4df;
+  box-shadow: var(--shadow-md);
+  backdrop-filter: none;
+  overflow-y: auto;
+  scrollbar-width: none;
+  border-radius: 20px;
+}
+html[data-theme="light"] .controls::-webkit-scrollbar { display: none; }
+html[data-theme="light"] .controls h2 {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  font-style: italic;
+  color: #1a1612;
+}
+
+/* 4. Лента — Pinterest: крупные карточки */
+html[data-theme="light"] .feed-grid {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 22px;
+  max-width: 1280px;
+}
+html[data-theme="light"] .feed-card {
+  border-radius: 20px;
+  border-color: #e8e4df;
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+html[data-theme="light"] .feed-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+  border-color: #e8e4df;
+}
+html[data-theme="light"] .feed-card-preview,
+html[data-theme="light"] .feed-card-preview-img { height: 200px; }
+html[data-theme="light"] .feed-card-info { padding: 14px 16px 14px; gap: 6px; }
+html[data-theme="light"] .feed-card-emotion {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 400;
+  color: #1a1612;
+  letter-spacing: 0;
+}
+html[data-theme="light"] .feed-card-meta { color: rgba(26, 22, 18, 0.4); font-size: 12px; }
+html[data-theme="light"] .feed-card-author { color: rgba(26, 22, 18, 0.5); }
+html[data-theme="light"] .feed-card-author:hover { color: #c4614a; }
+html[data-theme="light"] .feed-like-btn { color: rgba(26, 22, 18, 0.3); }
+html[data-theme="light"] .feed-like-btn.liked { color: #c4614a; }
+html[data-theme="light"] .like-count { color: rgba(26, 22, 18, 0.35); }
+
+/* 5. Сортировка */
+html[data-theme="light"] .feed-sort-btn {
+  border: 1px solid #e8e4df;
+  background: #ffffff;
+  color: rgba(26, 22, 18, 0.5);
+  border-radius: 20px;
+  font-size: 12px;
+  transition: all 0.18s;
+}
+html[data-theme="light"] .feed-sort-btn.active,
+html[data-theme="light"] .feed-sort-btn:hover {
+  border-color: #c4614a;
+  color: #c4614a;
+  background: rgba(196, 97, 74, 0.05);
+}
+
+/* 6. Карточки — stagger анимация */
+@keyframes cardSlideUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+html[data-theme="light"] .feed-card {
+  animation: cardSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: calc(var(--card-index, 0) * 50ms);
+}
+
+/* 7. Переход между страницами — слайд */
+@keyframes pageSlideIn {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+html[data-theme="light"] #app.page-enter {
+  animation: pageSlideIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 8. Auth форма */
+html[data-theme="light"] .auth-container {
+  background: #ffffff;
+  border-color: #e8e4df;
+  box-shadow: var(--shadow-lg);
+}
+html[data-theme="light"] .auth-title {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-style: italic;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #1a1612;
+}
+
+/* 9. Action button */
+html[data-theme="light"] .action-btn {
+  border-color: #c4614a;
+  color: #c4614a;
+  background: transparent;
+  border-radius: 10px;
+  font-size: 13px;
+}
+html[data-theme="light"] .action-btn:hover {
+  background: rgba(196, 97, 74, 0.08);
+  box-shadow: none;
+}
+
+/* 10. Emotion label */
+html[data-theme="light"] .emotion-label {
+  border-color: #e8e4df;
+  background: #faf9f7;
+}
+html[data-theme="light"] .emotion-name {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-style: italic;
+  font-weight: 400;
+  color: #c4614a;
+}
+
+/* 11. Скелетон карточек */
+html[data-theme="light"] .feed-card-skeleton {
+  background: #ffffff;
+  border-color: #e8e4df;
+  box-shadow: var(--shadow-sm);
+  border-radius: 20px;
+}
+html[data-theme="light"] .skeleton-preview { background: #f0ece8; }
+html[data-theme="light"] .skeleton-line { background: #ede9e5; }
+
+/* 12. Кастомный курсор (только мышь) */
+@media (pointer: fine) {
+  html[data-theme="light"] * { cursor: none !important; }
+  html[data-theme="light"] .cursor-dot {
+    position: fixed;
+    top: 0; left: 0;
+    width: 7px; height: 7px;
+    background: #c4614a;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: width 0.15s, height 0.15s;
+    will-change: left, top;
+  }
+  html[data-theme="light"] .cursor-ring {
+    position: fixed;
+    top: 0; left: 0;
+    width: 32px; height: 32px;
+    border: 1.5px solid rgba(196, 97, 74, 0.5);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: width 0.22s, height 0.22s, opacity 0.2s, border-color 0.2s;
+    will-change: left, top;
+  }
+  html[data-theme="light"] .cursor-ring--hover {
+    width: 46px; height: 46px;
+    border-color: rgba(196, 97, 74, 0.85);
+  }
+  html[data-theme="light"] .cursor-dot--press {
+    width: 11px; height: 11px;
+  }
 }
