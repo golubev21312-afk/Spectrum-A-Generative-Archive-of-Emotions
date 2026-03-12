@@ -1,4 +1,4 @@
-import { getUserProfile, getFollowers, getFollowing, isLoggedIn, followUser, unfollowUser, getLikedEmotions, updateBio, getFeed, sendMessage, getCollections } from "./api";
+import { getUserProfile, getFollowers, getFollowing, isLoggedIn, followUser, unfollowUser, getLikedEmotions, updateBio, updateAvatar, getFeed, sendMessage, getCollections } from "./api";
 import { createCard } from "./card";
 import { getUsername } from "./state";
 import { t } from "./i18n";
@@ -23,11 +23,54 @@ export function mountProfile(app: HTMLElement, username: string) {
     const header = document.createElement("div");
     header.className = "profile-header";
 
-    const avatarCanvas = document.createElement("canvas");
-    avatarCanvas.width = 80;
-    avatarCanvas.height = 80;
-    avatarCanvas.className = "profile-avatar";
-    drawAvatar(avatarCanvas, profile.username);
+    const avatarWrap = document.createElement("div");
+    avatarWrap.className = "profile-avatar-wrap";
+
+    let avatarEl: HTMLElement;
+    if (profile.avatar) {
+      const img = document.createElement("img");
+      img.src = profile.avatar;
+      img.className = "profile-avatar profile-avatar-img";
+      avatarEl = img;
+    } else {
+      const canvas = document.createElement("canvas");
+      canvas.width = 80; canvas.height = 80;
+      canvas.className = "profile-avatar";
+      drawAvatar(canvas, profile.username);
+      avatarEl = canvas;
+    }
+    avatarWrap.appendChild(avatarEl);
+
+    const isOwnProfileForAvatar = getUsername() === profile.username;
+    if (isOwnProfileForAvatar) {
+      const overlay = document.createElement("div");
+      overlay.className = "profile-avatar-overlay";
+      overlay.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
+      avatarWrap.appendChild(overlay);
+
+      const fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.accept = "image/*";
+      fileInput.style.display = "none";
+      fileInput.addEventListener("change", async () => {
+        const file = fileInput.files?.[0];
+        if (!file) return;
+        overlay.style.opacity = "1";
+        try {
+          const dataUrl = await resizeImageToSquare(file, 96);
+          await updateAvatar(profile.username, dataUrl);
+          const newImg = document.createElement("img");
+          newImg.src = dataUrl;
+          newImg.className = "profile-avatar profile-avatar-img";
+          avatarEl.replaceWith(newImg);
+          avatarEl = newImg;
+        } catch { /* silent */ } finally {
+          overlay.style.opacity = "";
+        }
+      });
+      avatarWrap.addEventListener("click", () => fileInput.click());
+      avatarWrap.appendChild(fileInput);
+    }
 
     const headerInfo = document.createElement("div");
     headerInfo.className = "profile-header-info";
@@ -138,7 +181,7 @@ export function mountProfile(app: HTMLElement, username: string) {
       headerInfo.appendChild(exportBtn);
     }
 
-    header.appendChild(avatarCanvas);
+    header.appendChild(avatarWrap);
     header.appendChild(headerInfo);
 
     // ── Tabs ───────────────────────────────────────────────
@@ -347,5 +390,28 @@ function openSendModal(toUsername: string, container: HTMLElement) {
     });
   }).catch(() => {
     list.textContent = t("notFound");
+  });
+}
+
+function resizeImageToSquare(file: File, size: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext("2d")!;
+        const s = Math.min(img.width, img.height);
+        const ox = (img.width - s) / 2;
+        const oy = (img.height - s) / 2;
+        ctx.drawImage(img, ox, oy, s, s, 0, 0, size, size);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = reject;
+      img.src = e.target!.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
 }

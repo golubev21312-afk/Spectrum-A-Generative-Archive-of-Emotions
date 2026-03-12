@@ -118,6 +118,9 @@ async def init_db() -> None:
             ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR(160);
         """)
         await conn.execute("""
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT;
+        """)
+        await conn.execute("""
             CREATE TABLE IF NOT EXISTS reactions (
                 id SERIAL PRIMARY KEY,
                 emotion_id INTEGER REFERENCES emotions(id) ON DELETE CASCADE,

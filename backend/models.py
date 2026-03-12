@@ -95,6 +95,10 @@ class BioUpdate(BaseModel):
     bio: str = Field("", max_length=160)
 
 
+class AvatarUpdate(BaseModel):
+    avatar: str = Field(..., max_length=200000)  # base64 JPEG data URL, max ~150 KB
+
+
 class EmotionTypeUpdate(BaseModel):
     emotion_type: str
 
@@ -109,6 +113,7 @@ class UserProfile(BaseModel):
     following_count: int = 0
     is_following: bool = False
     bio: Optional[str] = None
+    avatar: Optional[str] = None
 
 
 class NotificationOut(BaseModel):

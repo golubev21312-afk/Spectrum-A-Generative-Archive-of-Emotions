@@ -16,7 +16,7 @@ from database import get_pool, init_db, close_db
 from helpers import build_emotion
 from widget import build_widget_html, SHAPE_NAMES_EN
 from models import (EmotionIn, EmotionOut, EmotionFeed, UserRegister, UserOut, UserProfile,
-                    NotificationOut, CommentIn, CommentOut, BioUpdate, EmotionTypeUpdate,
+                    NotificationOut, CommentIn, CommentOut, BioUpdate, AvatarUpdate, EmotionTypeUpdate,
                     OkResponse, LoginOut, EmotionCreatedOut, UserListItem, ReactIn,
                     MessageIn, MessageOut, CollectionIn, CollectionOut, CollectionFull)
 
@@ -512,7 +512,7 @@ async def get_user_profile(username: str, user: dict | None = Depends(get_curren
     pool = await get_pool()
     async with pool.acquire() as conn:
         user_row = await conn.fetchrow(
-            "SELECT id, username, created_at, bio FROM users WHERE username = $1", username
+            "SELECT id, username, created_at, bio, avatar FROM users WHERE username = $1", username
         )
         if user_row is None:
             raise HTTPException(status_code=404, detail="User not found")
@@ -571,6 +571,7 @@ async def get_user_profile(username: str, user: dict | None = Depends(get_curren
         following_count=following_count_row["count"],
         is_following=is_following,
         bio=user_row["bio"],
+        avatar=user_row["avatar"],
     )
 
 
@@ -588,6 +589,20 @@ async def update_emotion_type(emotion_id: int, data: EmotionTypeUpdate, user: di
         if row["user_id"] != user["user_id"]:
             raise HTTPException(status_code=403, detail="Not your emotion")
         await conn.execute("UPDATE emotions SET emotion_type=$1 WHERE id=$2", data.emotion_type, emotion_id)
+    return {"ok": True}
+
+
+@app.patch("/users/{username}/avatar", status_code=200, response_model=OkResponse)
+async def update_avatar(username: str, data: AvatarUpdate, user: dict = Depends(get_current_user)):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    if user["username"] != username:
+        raise HTTPException(status_code=403, detail="Cannot edit another user's avatar")
+    if not data.avatar.startswith("data:image/"):
+        raise HTTPException(status_code=400, detail="Invalid image data")
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("UPDATE users SET avatar=$1 WHERE username=$2", data.avatar, username)
     return {"ok": True}
 
 

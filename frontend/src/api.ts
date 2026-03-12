@@ -35,6 +35,7 @@ export interface UserProfile {
   is_following: boolean;
   emotions: EmotionResponse[];
   bio?: string;
+  avatar?: string;
 }
 
 export interface NotificationResponse {
@@ -185,6 +186,15 @@ export async function deleteEmotion(id: number): Promise<void> {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+}
+
+export async function updateAvatar(username: string, dataUrl: string): Promise<void> {
+  const res = await fetchWithRefresh(`${API_BASE}/users/${username}/avatar`, {
+    method: "PATCH",
+    headers: authHeaders(),
+    body: JSON.stringify({ avatar: dataUrl }),
+  });
+  if (!res.ok) throw new Error(`Avatar update failed: ${res.status}`);
 }
 
 export async function updateBio(username: string, bio: string): Promise<void> {
