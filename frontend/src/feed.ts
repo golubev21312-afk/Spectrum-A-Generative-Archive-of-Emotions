@@ -18,11 +18,13 @@ const EMOTION_TYPES_EN = [
   "Rage","Passion","Anxiety","Energy","Joy","Hope","Calm",
   "Melancholy","Sadness","Mystery","Tenderness","Emptiness",
   "Chaos","Harmony","Contemplation","Serenity",
+  "Fury","Euphoria","Dread","Bliss","Wonder","Nostalgia","Yearning","Catharsis",
 ];
 const EMOTION_TYPES_RU = [
   "Ярость","Страсть","Тревога","Энергия","Радость","Надежда","Спокойствие",
   "Меланхолия","Грусть","Мистика","Нежность","Пустота",
   "Хаос","Гармония","Созерцание","Безмятежность",
+  "Бешенство","Эйфория","Ужас","Блаженство","Изумление","Ностальгия","Тоска","Катарсис",
 ];
 
 function emotionTypes() {

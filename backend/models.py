@@ -8,15 +8,22 @@ PARAM_RANGES: dict[str, tuple[float, float]] = {
     "rotationSpeed":  (0.0,   5.0),
     "noiseAmplitude": (0.0,   2.0),
     "particleDensity":(0.0,   500.0),
+    "particleHue":    (0.0,   360.0),
+    "particleSize":   (0.2,   3.0),
+    "particleSpeed":  (0.0,   3.0),
+    "particleForce":  (-1.0,  1.0),
+    "glowIntensity":  (0.0,   2.0),
 }
 
 ALLOWED_EMOTION_TYPES = {
     "Rage","Passion","Anxiety","Energy","Joy","Hope","Calm",
     "Melancholy","Sadness","Mystery","Tenderness","Emptiness",
     "Chaos","Harmony","Contemplation","Serenity",
+    "Fury","Euphoria","Dread","Bliss","Wonder","Nostalgia","Yearning","Catharsis",
     "Ярость","Страсть","Тревога","Энергия","Радость","Надежда","Спокойствие",
     "Меланхолия","Грусть","Мистика","Нежность","Пустота",
     "Хаос","Гармония","Созерцание","Безмятежность",
+    "Бешенство","Эйфория","Ужас","Блаженство","Изумление","Ностальгия","Тоска","Катарсис",
 }
 
 

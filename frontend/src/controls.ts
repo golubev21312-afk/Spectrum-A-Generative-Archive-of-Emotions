@@ -4,8 +4,8 @@ import { ZODIAC_SIGNS } from "./zodiac";
 
 interface SliderConfig {
   key: keyof CubeParams;
-  labelKey: "hue" | "transparency" | "rotation" | "noise" | "particles" | "particleHue";
-  hintKey: "hintHue" | "hintTransparency" | "hintRotation" | "hintNoise" | "hintParticles" | "hintParticleHue";
+  labelKey: "hue" | "transparency" | "rotation" | "noise" | "particles" | "particleHue" | "particleSize" | "particleSpeed" | "particleForce" | "glowIntensity";
+  hintKey: "hintHue" | "hintTransparency" | "hintRotation" | "hintNoise" | "hintParticles" | "hintParticleHue" | "hintParticleSize" | "hintParticleSpeed" | "hintParticleForce" | "hintGlowIntensity";
   min: number;
   max: number;
   step: number;
@@ -19,6 +19,10 @@ const SLIDERS: SliderConfig[] = [
   { key: "noiseAmplitude", labelKey: "noise", hintKey: "hintNoise", min: 0, max: 2, step: 0.01, default: DEFAULT_PARAMS.noiseAmplitude },
   { key: "particleDensity", labelKey: "particles", hintKey: "hintParticles", min: 0, max: 500, step: 1, default: DEFAULT_PARAMS.particleDensity },
   { key: "particleHue", labelKey: "particleHue", hintKey: "hintParticleHue", min: 0, max: 360, step: 1, default: DEFAULT_PARAMS.particleHue! },
+  { key: "particleSize", labelKey: "particleSize", hintKey: "hintParticleSize", min: 0.2, max: 3, step: 0.1, default: DEFAULT_PARAMS.particleSize! },
+  { key: "particleSpeed", labelKey: "particleSpeed", hintKey: "hintParticleSpeed", min: 0, max: 3, step: 0.1, default: DEFAULT_PARAMS.particleSpeed! },
+  { key: "particleForce", labelKey: "particleForce", hintKey: "hintParticleForce", min: -1, max: 1, step: 0.05, default: DEFAULT_PARAMS.particleForce! },
+  { key: "glowIntensity", labelKey: "glowIntensity", hintKey: "hintGlowIntensity", min: 0, max: 2, step: 0.05, default: DEFAULT_PARAMS.glowIntensity! },
 ];
 
 const ZODIAC_SYMBOLS: Record<string, string> = {
