@@ -137,6 +137,33 @@ function createNav(): HTMLElement {
   return nav;
 }
 
+function createTopBar(): HTMLElement {
+  const bar = document.createElement("div");
+  bar.className = "top-bar";
+
+  const langBtn = document.createElement("button");
+  langBtn.className = "top-bar-btn";
+  langBtn.textContent = getLang() === "ru" ? "EN" : "RU";
+  langBtn.addEventListener("click", () => {
+    const next: Lang = getLang() === "ru" ? "en" : "ru";
+    setLang(next);
+    route();
+  });
+
+  const themeBtn = document.createElement("button");
+  themeBtn.className = "top-bar-btn";
+  themeBtn.title = "Toggle theme";
+  themeBtn.textContent = getTheme() === "dark" ? "☀" : "🌙";
+  themeBtn.addEventListener("click", () => {
+    const next = toggleTheme();
+    themeBtn.textContent = next === "dark" ? "☀" : "🌙";
+  });
+
+  bar.appendChild(langBtn);
+  bar.appendChild(themeBtn);
+  return bar;
+}
+
 function createWordmark(): HTMLElement {
   const r = parseRoute(location.hash);
   // На странице создания куб занимает весь фон — логотип не нужен
@@ -240,6 +267,7 @@ function route() {
   app.classList.add("page-enter");
   app.appendChild(createNav());
   app.appendChild(createMobileNav());
+  app.appendChild(createTopBar());
   app.appendChild(createWordmark());
 
   const route = parseRoute(location.hash);

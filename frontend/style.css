@@ -2542,10 +2542,10 @@ html[data-theme="light"] .message-date { color: rgba(26,22,18,0.45); }
 html[data-theme="light"] .message-emotion-label { color: #c4614a; }
 html[data-theme="light"] .page-hint {
   top: 18px;
-  left: 160px;
+  left: 320px;
   transform: none;
   font-size: 12px;
-  color: rgba(26, 22, 18, 0.35);
+  color: rgba(26, 22, 18, 0.5);
 }
 
 /* 3. Панель управления — левая сторона, чистый белый */
@@ -2738,6 +2738,35 @@ html[data-theme="light"] .skeleton-line { background: #ede9e5; }
   html[data-theme="light"] .cursor-dot--press {
     width: 11px; height: 11px;
   }
+}
+
+/* top-bar: lang + theme кнопки для светлой темы */
+.top-bar { display: none; }
+html[data-theme="light"] .top-bar {
+  display: flex;
+  position: fixed;
+  top: 14px;
+  right: 20px;
+  gap: 6px;
+  z-index: 100;
+  align-items: center;
+}
+.top-bar-btn {
+  background: transparent;
+  border: 1px solid rgba(26, 22, 18, 0.18);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-family: var(--font);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  color: rgba(26, 22, 18, 0.55);
+  transition: border-color 0.18s, color 0.18s;
+}
+.top-bar-btn:hover {
+  border-color: #c4614a;
+  color: #c4614a;
 }
 
 /* 13. Wordmark — логотип Spectrum на страницах */
