@@ -2159,6 +2159,9 @@ html[data-theme="light"] .controls h2 {
 html[data-theme="light"] .slider-group label {
   color: rgba(26, 22, 18, 0.6);
 }
+html[data-theme="light"] .slider-hint {
+  color: rgba(26, 22, 18, 0.48);
+}
 html[data-theme="light"] input[type="range"] {
   background: rgba(0, 0, 0, 0.12);
 }
@@ -2289,6 +2292,7 @@ html[data-theme="light"] .today-card-meta {
 
 /* Viewer overlay – always on top of dark 3D canvas, keep text light */
 html[data-theme="light"] .viewer-overlay {
+  bottom: calc(64px + 16px);
   text-shadow: 0 1px 6px rgba(0,0,0,0.5);
 }
 html[data-theme="light"] .feed-back-btn {
@@ -2300,6 +2304,18 @@ html[data-theme="light"] .feed-back-btn:hover {
 }
 
 /* Notifications */
+html[data-theme="light"] .feed-empty {
+  color: rgba(26, 22, 18, 0.4);
+}
+html[data-theme="light"] .notif-empty {
+  color: rgba(26, 22, 18, 0.4);
+}
+html[data-theme="light"] .notif-read-all {
+  color: rgba(26, 22, 18, 0.45);
+}
+html[data-theme="light"] .notif-title {
+  color: #1a1612;
+}
 html[data-theme="light"] .notif-item {
   border-color: rgba(0,0,0,0.07);
   background: rgba(255,255,255,0.7);
@@ -2337,6 +2353,15 @@ html[data-theme="light"] .profile-tab {
 html[data-theme="light"] .profile-tab.active {
   border-color: var(--accent);
   color: var(--accent);
+}
+html[data-theme="light"] .profile-stats {
+  color: rgba(26, 22, 18, 0.55);
+}
+html[data-theme="light"] .profile-name {
+  color: #c4614a;
+}
+html[data-theme="light"] .profile-header {
+  align-items: flex-start;
 }
 
 /* Comments */
@@ -2525,6 +2550,7 @@ html[data-theme="light"] .page-hint {
 
 /* 3. Панель управления — левая сторона, чистый белый */
 html[data-theme="light"] .controls {
+  animation: slideInBottom 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
   right: auto;
   left: 20px;
   top: 20px;
